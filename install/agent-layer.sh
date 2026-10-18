@@ -36,7 +36,7 @@ git -C "$project" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
 
 begin="# >>> agent-layer (managed by cursor-template install/agent-layer.sh)"
 end="# <<< agent-layer"
-exclude_file=$(git -C "$project" rev-parse --git-path info/exclude)
+exclude_file=$(abs_git_path "$project" info/exclude)
 
 write_patterns() {
     _wp=$1

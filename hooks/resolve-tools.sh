@@ -51,6 +51,10 @@ switch_field() {
     project_field "$1" "$_sf_file"
 }
 
+abs_git_path() {
+    git -C "$1" rev-parse --path-format=absolute --git-path "$2"
+}
+
 version_lt() {
     python3 - "$1" "$2" <<'PY'
 import sys

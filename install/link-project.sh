@@ -140,7 +140,7 @@ while IFS= read -r line || [ -n "$line" ]; do
     fi
 done < "$here/links.txt"
 
-exclude_file=$(git -C "$project" rev-parse --git-path info/exclude)
+exclude_file=$(abs_git_path "$project" info/exclude)
 begin="# >>> cursor-template"
 end="# <<< cursor-template"
 

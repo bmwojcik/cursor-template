@@ -118,7 +118,7 @@ backup_file() {
     [ -e "$project/$rel" ] || return 0
     if [ -z "$backup_dir" ]; then
         stamp=$(date +%Y%m%d%H%M%S)
-        git_path=$(git -C "$project" rev-parse --git-path "cursor-template-backup/$stamp")
+        git_path=$(abs_git_path "$project" "cursor-template-backup/$stamp")
         case $git_path in
             /*) backup_dir=$git_path ;;
             *) backup_dir=$project/$git_path ;;
@@ -219,7 +219,7 @@ if [ "$adopt" -eq 1 ]; then
         fi
     done
 fi
-opt_file=$(git -C "$project" rev-parse --git-path agent-tools.local)
+opt_file=$(abs_git_path "$project" agent-tools.local)
 case $opt_file in
     /*) ;;
     *) opt_file=$project/$opt_file ;;
