@@ -15,3 +15,4 @@ jobs:
         with:
           python-version: "3.12"
       - run: python3 docs/ci/docs-impact.py --base "origin/${{ github.base_ref }}"
+      - run: python3 docs/ci/notes-append-only.py --base "origin/${{ github.base_ref }}"

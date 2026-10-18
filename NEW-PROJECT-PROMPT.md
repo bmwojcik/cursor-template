@@ -2,7 +2,7 @@
 
 Human copy-paste. The agent follows [`IMPLEMENT.md`](./IMPLEMENT.md).
 
-Everyday coding: Composer. Deep analysis: Claude Opus with `OPERATING_MANUAL.md`. Cursor workers: the newest Grok slug. The reviewer, when enabled, is [merge-reviewer](https://github.com/bmwojcik/merge-reviewer), not this chat.
+Everyday coding: Composer 2.5 Fast. Deep analysis: Claude Opus with `OPERATING_MANUAL.md`. Cursor workers: the newest Grok slug. The reviewer, when enabled, is [merge-reviewer](https://github.com/bmwojcik/merge-reviewer), not this chat.
 
 ## Before you paste
 
@@ -45,7 +45,9 @@ Then compare every local copy with the tool repos (cursor-template, and merge-re
 skills, rules, agents, commands, docs scripts, templates, hooks, AGENTS.md, CLAUDE.md.
 
 - Move project-specific instructions into PROJECT.md ## Agent rules, ## Quality bar, and ## Environment. Tool switches and ## Reproduce ticket go to .agent-tools/config.md (`install.sh --migrate-config` does this move).
-- If CI runs docs/scripts/docs-impact.py (or a pipeline step that calls it), move that script and its config to docs/ci/ and point the job at docs/ci/docs-impact.py. Do not delete a CI-owned script.
+- `install.sh --check` prints `team-ref-to-local <file>:<line> <path>` when a committed file mentions a laptop-only link (a skill, a linked rule, `docs/templates` when it is linked, or a linked notes/docs-impact script). Fix those lines before you finish. The warning does not by itself fail `--check`.
+- In a committed layer, `OPERATING_MANUAL.md` is a real file. `.agent-tools/vendored.lock` records the sha256 that was copied. Do not hand-edit that file unless you mean to: `--check` then prints `vendored-modified` and stops. `install.sh --sync-vendored` overwrites it after a backup under `.git/cursor-template-backup/`.
+- If CI runs docs/scripts/docs-impact.py (or a pipeline step that calls it), move that script and its config to docs/ci/ and point the job at docs/ci/docs-impact.py. The same job runs `python3 docs/ci/notes-append-only.py --base <ref>`. Do not delete a CI-owned script.
 - A committed human doc page that the template would link (for example `docs/developer/review-change.md` or `docs/templates`) stays in git. Add that path to PROJECT.md **Keep local**. Do not delete it and do not replace it with a symlink. The doc site builds from git.
 - Show me the deletion list (files that duplicate the template or the reviewer and are safe to remove). Do not delete yet.
 - Fill PROJECT.md, seed or repair INDEX and architecture from the code (grep before citing; no secrets).

@@ -49,4 +49,4 @@ src/
 
 ## Claude
 
-Optional notes that apply only to Claude Code. Leave this section empty when there are none.
+Deep analysis reads `OPERATING_MANUAL.md` in this repository. When the agent layer is committed, that file is a copy, not a symlink.

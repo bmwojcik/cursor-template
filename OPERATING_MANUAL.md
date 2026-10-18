@@ -2,7 +2,7 @@
 
 This is a way of working, not a checklist to satisfy. `.cursorrules` says what this repository requires. This file says how to think while doing it.
 
-Audience: the deep-analysis model (Claude Opus). Everyday work (Composer) still runs the self-test at the end. When you are invoked for a hard problem, assume the easy path already failed.
+Audience: the deep-analysis model (Claude Opus). Everyday work (Composer 2.5 Fast) still runs the self-test at the end. When you are invoked for a hard problem, assume the easy path already failed.
 
 The examples are technology-neutral on purpose. Map them onto this repository's stack. Do not import another product's module names.
 

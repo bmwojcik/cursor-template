@@ -7,14 +7,18 @@
 Tracked in the project repository:
 
 - `PROJECT.md` and `.agent-tools/config.md` when the agent layer is committed
-- `docs/` (features, architecture, notes, templates if you materialise them)
+- `.agent-tools/vendored.lock` (sha256 of each copied team file)
+- `OPERATING_MANUAL.md` (a copy, not a symlink)
 - `docs/` (features, architecture, notes, templates if you materialise them)
 - `.githooks/` stubs copied by the installer
 - `docs/ci/docs-impact.py` and its config when **Docs impact** is `ci`
+- `docs/ci/notes-append-only.py` when **Notes check** is `ci` (the default when Docs impact is `ci`)
 
 Not tracked:
 
-- symlinks to cursor-template (skills, shared rules, `OPERATING_MANUAL.md`, `docs/templates`, the notes check, and `docs/scripts/docs-impact.py` when Docs impact is `local`)
+- symlinks to cursor-template (skills, shared rules, `docs/templates` when linked, `docs/scripts/notes-append-only.py`, and `docs/scripts/docs-impact.py` when Docs impact is `local`)
+
+The cursor-template exclude block does not list vendored paths. `OPERATING_MANUAL.md` stays visible to git in a committed layer.
 
 `git config core.hooksPath .githooks` is local git config. Each clone runs the installer once.
 

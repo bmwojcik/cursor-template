@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -43,6 +44,7 @@ MOVE_KEYS = {
     "Agent layer tracked",
     "Keep local",
     "Docs impact",
+    "Notes check",
     "Cursor template version",
     "Merge reviewer",
     "Merge reviewer version",
@@ -131,6 +133,18 @@ def code_roots(text: str) -> list[str]:
     return roots
 
 
+def notes_mode(keys: dict[str, str]) -> str:
+    explicit = token(keys.get("Notes check", "")).lower()
+    if explicit in {"ci", "local", "off"}:
+        return explicit
+    docs = token(keys.get("Docs impact", "off")).lower() or "off"
+    if docs == "ci":
+        return "ci"
+    if docs == "local":
+        return "local"
+    return "off"
+
+
 def append_section(body: str, title: str, extra: str) -> str:
     extra = extra.strip()
     if not extra or extra == "(none)":
@@ -160,6 +174,12 @@ def render_team(root: Path, project: Path, reviewer_enabled: bool) -> tuple[str,
             "\n## Docs check\n\n"
             "A behaviour change in mapped code needs a docs update in the same change. "
             "CI runs `python3 docs/ci/docs-impact.py`.\n"
+        )
+    if notes_mode(keys) == "ci":
+        agents += (
+            "\n## Notes check\n\n"
+            "CI runs `python3 docs/ci/notes-append-only.py --base <ref>` "
+            "so an edited or deleted `docs/notes/` file fails the docs job.\n"
         )
     for title in ("Environment", "Quality bar", "Agent rules"):
         agents = append_section(agents, title, bodies.get(title, ""))
@@ -209,18 +229,20 @@ def render_local(project: Path, reviewer_enabled: bool) -> tuple[str, str]:
     ]
     for label, path in skill_rows(project, reviewer_enabled):
         lines.append(f"| {label} | `{path}` |")
-    lines.extend(
-        [
-            "",
-            "## Notes",
-            "",
-            "After appending to `docs/notes/`, run `python3 docs/scripts/notes-append-only.py` until it prints `ok`.",
-            "The pre-commit hook runs it with `--staged` and blocks the commit when an old entry changed.",
-            "",
-            "## Docs impact",
-            "",
-        ]
-    )
+    lines.extend(["", "## Notes", ""])
+    if notes_mode(keys) == "ci":
+        lines.append(
+            "The committed notes check is `python3 docs/ci/notes-append-only.py`. "
+            "The pre-commit hook runs that copy with `--staged` when it is present."
+        )
+    elif notes_mode(keys) == "local":
+        lines.append(
+            "After appending to `docs/notes/`, run `python3 docs/scripts/notes-append-only.py` until it prints `ok`. "
+            "The pre-commit hook runs it with `--staged` and blocks the commit when an old entry changed."
+        )
+    else:
+        lines.append("Notes check is off on this laptop.")
+    lines.extend(["", "## Docs impact", ""])
     if docs == "local" or (docs == "ci" and layer == "local"):
         lines.append(
             "Hidden docs are not staged. The pre-commit check is advisory: it prints findings and does not block. "
@@ -282,6 +304,101 @@ def write_team(path: Path, expected: str, force: bool) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(expected, encoding="utf-8")
     return "wrote"
+
+
+def clean_rel(value: str) -> str:
+    value = value.strip().strip("`")
+    if value.startswith("./"):
+        value = value[2:]
+    return value.rstrip("/")
+
+
+def kept_paths(keys: dict[str, str]) -> set[str]:
+    found: set[str] = set()
+    for part in keys.get("Keep local", "").split(","):
+        item = clean_rel(part)
+        if item:
+            found.add(item)
+    return found
+
+
+def filter_matches(filt: str, stack: str, docs: str) -> bool:
+    if not filt:
+        return True
+    if filt == stack:
+        return True
+    return filt == "docs-impact:local" and docs == "local"
+
+
+def link_only_paths(root: Path, keys: dict[str, str]) -> list[str]:
+    stack = token(keys.get("Stack", "generic")) or "generic"
+    docs = token(keys.get("Docs impact", "off")) or "off"
+    layer = token(keys.get("Agent layer", "committed")) or "committed"
+    kept = kept_paths(keys)
+    paths: list[str] = []
+    for raw in (root / "install" / "links.txt").read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        vendor = False
+        filt = ""
+        rest = line
+        if line.startswith("["):
+            filt, rest = line[1:].split("]", 1)
+            rest = rest.strip()
+            if filt == "vendor:committed":
+                vendor = True
+                filt = ""
+        parts = rest.split()
+        if len(parts) != 2 or not filter_matches(filt, stack, docs):
+            continue
+        dest = clean_rel(parts[1])
+        if vendor and layer == "committed":
+            continue
+        if dest in kept:
+            continue
+        paths.append(dest)
+        if dest.startswith(".cursor/skills/"):
+            paths.append(".claude/skills/" + dest.removeprefix(".cursor/skills/"))
+    return sorted(set(paths), key=len, reverse=True)
+
+
+def scan_text(rel: str, text: str, paths: list[str]) -> None:
+    for number, line in enumerate(text.splitlines(), start=1):
+        for path in paths:
+            if path and path in line:
+                print(f"team-ref-to-local {rel}:{number} {path}")
+                break
+
+
+def iter_committed_docs(project: Path):
+    docs = project / "docs"
+    if not docs.is_dir() or docs.is_symlink():
+        return
+    for dirpath, dirnames, filenames in os.walk(docs, followlinks=False):
+        current = Path(dirpath)
+        dirnames[:] = [name for name in dirnames if not (current / name).is_symlink()]
+        for name in filenames:
+            path = current / name
+            if name.endswith(".md") and path.is_file() and not path.is_symlink():
+                yield path
+
+
+def scan_team_refs(root: Path, project: Path) -> None:
+    keys, _bodies, _legacy = load_settings(project)
+    paths = link_only_paths(root, keys)
+    if not paths:
+        return
+    layer = token(keys.get("Agent layer", "committed")) or "committed"
+    targets: list[Path] = []
+    for name in ("AGENTS.md", "CLAUDE.md", ".cursorrules", "PROJECT.md", "CODING_PRINCIPLES.md"):
+        path = project / name
+        if path.is_file() and not path.is_symlink():
+            targets.append(path)
+    if layer == "committed":
+        targets.extend(iter_committed_docs(project))
+    for path in targets:
+        scan_text(path.relative_to(project).as_posix(), path.read_text(encoding="utf-8", errors="replace"), paths)
 
 
 def hand_message(path: Path, project: Path) -> str:
@@ -480,6 +597,8 @@ def main() -> int:
             continue
         path.write_text(expected, encoding="utf-8")
         print(f"{path.name}: wrote")
+    if args.check:
+        scan_team_refs(root, project)
     if hand_edited:
         return 2
     return 1 if failed else 0

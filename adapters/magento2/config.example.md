@@ -6,7 +6,8 @@
 <!-- Comma-separated paths or shell globs that stay in git, for example app/code/Acme/Widget/README.md -->
 - **Keep local:** docs/developer/review-change.md, docs/templates
 - **Docs impact:** local
-- **Cursor template version:** 0.2.2
+- **Notes check:** local
+- **Cursor template version:** 0.3.0
 - **Merge reviewer version:** 0.1.0
 - **Review language:** English
 - **Review canvas labels:** Approved / Approved with notes / Needs changes

@@ -58,13 +58,30 @@ run_docs() {
     return "$_status"
 }
 
+docs_hidden_flag() {
+    _script=$1
+    if python3 "$_script" --help 2>&1 | grep -q -- '--include-hidden-since-head'; then
+        printf '%s\n' --include-hidden-since-head
+    fi
+}
+
+run_docs_checked() {
+    _script=$1
+    if [ "$advisory" -eq 1 ]; then
+        _flag=$(docs_hidden_flag "$_script" || true)
+        if [ -n "$_flag" ]; then
+            run_docs "$_script" --staged "$_flag" || exit 1
+        else
+            run_docs "$_script" --staged || exit 1
+        fi
+    else
+        run_docs "$_script" --staged || exit 1
+    fi
+}
+
 case "$docs" in
     ci)
-        if [ "$advisory" -eq 1 ]; then
-            run_docs "$repo/docs/ci/docs-impact.py" --staged --include-hidden-since-head || exit 1
-        else
-            run_docs "$repo/docs/ci/docs-impact.py" --staged || exit 1
-        fi
+        run_docs_checked "$repo/docs/ci/docs-impact.py"
         ;;
     local)
         script=
@@ -74,7 +91,7 @@ case "$docs" in
             script=$CURSOR_TEMPLATE_HOME/tools/docs-impact.py
         fi
         if [ -n "$script" ]; then
-            run_docs "$script" --staged --include-hidden-since-head || exit 1
+            run_docs_checked "$script"
         else
             echo "docs-impact: template checkout missing; skipped" >&2
         fi
@@ -86,16 +103,30 @@ case "$docs" in
         ;;
 esac
 
-notes=
-if [ -f "$repo/docs/scripts/notes-append-only.py" ]; then
-    notes=$repo/docs/scripts/notes-append-only.py
-elif [ -n "${CURSOR_TEMPLATE_HOME:-}" ] && [ -f "$CURSOR_TEMPLATE_HOME/tools/notes-append-only.py" ]; then
-    notes=$CURSOR_TEMPLATE_HOME/tools/notes-append-only.py
+notes_mode=$(switch_token "Notes check" || true)
+if [ -z "$notes_mode" ]; then
+    if [ "$docs" = "ci" ]; then
+        notes_mode=ci
+    elif [ "$docs" = "local" ]; then
+        notes_mode=local
+    else
+        notes_mode=off
+    fi
 fi
-if [ -n "$notes" ]; then
-    python3 "$notes" --staged || exit 1
-else
-    echo "notes-append-only: template checkout missing; skipped" >&2
+notes=
+if [ "$notes_mode" != "off" ]; then
+    if [ -f "$repo/docs/ci/notes-append-only.py" ]; then
+        notes=$repo/docs/ci/notes-append-only.py
+    elif [ -f "$repo/docs/scripts/notes-append-only.py" ]; then
+        notes=$repo/docs/scripts/notes-append-only.py
+    elif [ -n "${CURSOR_TEMPLATE_HOME:-}" ] && [ -f "$CURSOR_TEMPLATE_HOME/tools/notes-append-only.py" ]; then
+        notes=$CURSOR_TEMPLATE_HOME/tools/notes-append-only.py
+    fi
+    if [ -n "$notes" ]; then
+        python3 "$notes" --staged || exit 1
+    else
+        echo "notes-append-only: template checkout missing; skipped" >&2
+    fi
 fi
 
 exit 0

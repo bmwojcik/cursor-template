@@ -8,3 +8,4 @@
       - apk add --no-cache git
       - git fetch origin "${BITBUCKET_PR_DESTINATION_BRANCH}"
       - python3 docs/ci/docs-impact.py --base "origin/${BITBUCKET_PR_DESTINATION_BRANCH}"
+      - python3 docs/ci/notes-append-only.py --base "origin/${BITBUCKET_PR_DESTINATION_BRANCH}"

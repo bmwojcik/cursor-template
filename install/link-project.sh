@@ -54,8 +54,10 @@ if _got=$(tool_config_path); then
 fi
 stack=$(project_token "Stack" "$_cfg")
 docs=$(project_token "Docs impact" "$_cfg")
+layer=$(project_token "Agent layer" "$_cfg")
 [ -n "$stack" ] || stack=generic
 [ -n "$docs" ] || docs=off
+[ -n "$layer" ] || layer=committed
 
 wanted=$(mktemp)
 all_dests=$(mktemp)
@@ -98,6 +100,7 @@ while IFS= read -r line || [ -n "$line" ]; do
         ""|"#"*) continue ;;
     esac
     filter=
+    vendor=0
     rest=$line
     case $line in
         "["*)
@@ -106,6 +109,10 @@ while IFS= read -r line || [ -n "$line" ]; do
             rest=${line#*] }
             ;;
     esac
+    if [ "$filter" = "vendor:committed" ]; then
+        vendor=1
+        filter=
+    fi
     set -f
     # shellcheck disable=SC2086
     set -- $rest
@@ -123,6 +130,9 @@ while IFS= read -r line || [ -n "$line" ]; do
             ;;
     esac
     if filter_matches "$filter"; then
+        if [ "$vendor" -eq 1 ] && [ "$layer" = "committed" ]; then
+            continue
+        fi
         if is_kept "$dest"; then
             printf '%s\n' "$dest" >> "$kept"
         else

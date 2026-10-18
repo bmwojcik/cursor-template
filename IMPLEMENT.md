@@ -37,9 +37,13 @@ install/install.sh <project> --check
 
 That links files in `install/links.txt`, sets `core.hooksPath` to `.githooks`, copies hook stubs, generates `AGENTS.md` and `CLAUDE.md`, and:
 
+- **Agent layer** `committed`: `[vendor:committed]` paths (today `OPERATING_MANUAL.md`) are real files. The sha256 is stored in `.agent-tools/vendored.lock`, which is committed with the layer. The exclude block does not list those paths. A copy that still matches the lock is updated when the template file changes. A hand-edited copy is left alone: `--check` prints `vendored-modified` and exits 1. `install.sh --sync-vendored` backs it up under `.git/cursor-template-backup/` and overwrites it.
+- **Agent layer** `local`: those same paths stay symlinks and are excluded.
 - **Docs impact** `ci` and missing `docs/ci/docs-impact.py`: copies the script and writes a config from the code roots.
 - **Docs impact** `local`: links `tools/docs-impact.py` and writes `docs/scripts/docs-impact.config.json` when missing.
-- **Agent layer** `local`: hides the layer. **committed**: removes that hide block.
+- **Notes check** `ci` (the default when Docs impact is `ci`): copies `docs/ci/notes-append-only.py` once. Later template edits do not replace that copy unless `--sync-vendored`. `--check` prints `vendored-stale` and still exits 0 when the copy matches the lock and the template has moved on.
+- **Notes check** `local`: links `docs/scripts/notes-append-only.py`. **off**: the hook skips the notes check.
+- **Agent layer** `local` writes the hide block in `.git/info/exclude`. **committed** removes that block.
 - **Merge reviewer on this laptop:** the installer links it when the checkout exists and `.git/agent-tools.local` does not opt out. `--without-reviewer` writes that opt-out. A missing checkout does not fail install.
 - **Keep local:** paths this repo commits itself (human doc pages the site builds from git). The linker skips each one: it does not create a symlink, it does not report a conflict when a real file is already there, and `--unlink` leaves the file. `--check` prints `kept-local` and still exits 0.
 
@@ -61,7 +65,7 @@ If a ticket disagrees with the code, document the code and say the ticket claim 
 
 ## 4. Docs impact on CI
 
-When the switch is `ci`, commit `docs/ci/docs-impact.py` and `docs/ci/docs-impact.config.json`. Add a job from `docs/scripts/gitlab-ci-docs-impact.example.yml`, `github-actions-docs-impact.example.yml`, or `bitbucket-pipelines-docs-impact.example.yml`. Do not install hooks from `composer install` or `npm install`.
+When the switch is `ci`, commit `docs/ci/docs-impact.py`, `docs/ci/docs-impact.config.json`, and `docs/ci/notes-append-only.py`. Add a job from `docs/scripts/gitlab-ci-docs-impact.example.yml`, `github-actions-docs-impact.example.yml`, or `bitbucket-pipelines-docs-impact.example.yml`. That job runs both scripts. The notes script is `python3 docs/ci/notes-append-only.py --base <ref>`. Do not install hooks from `composer install` or `npm install`.
 
 When the switch is `off`, do not add the job and do not tell the agent to run the script.
 
@@ -80,8 +84,8 @@ When the switch is `off`, stop. When it is `on`, tell the human to clone [merge-
 ## Checks
 
 - [ ] The three switches match the human's answers
-- [ ] `install/install.sh <project> --check` exits 0, or the only failure is a reviewer checkout the human has not cloned yet
+- [ ] `install/install.sh <project> --check` exits 0, or the only failure is a reviewer checkout the human has not cloned yet. `team-ref-to-local` lines are fixed. `vendored-modified` is not left failing.
 - [ ] INDEX rows cite paths that exist in this repo
 - [ ] `docs-impact` config prefixes match `PROJECT.md` when the switch is not `off`
 - [ ] Generated `AGENTS.md` contains `## Review policy` only when the reviewer is `on`
-- [ ] Symlinks are ignored (`git check-ignore -v` on `OPERATING_MANUAL.md`)
+- [ ] Committed layer: `OPERATING_MANUAL.md` is a regular file and `git check-ignore -v OPERATING_MANUAL.md` is empty. Local layer: that path is a symlink and ignored.

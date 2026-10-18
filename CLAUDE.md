@@ -3,12 +3,12 @@
 Guidance for Claude Code. Follow `AGENTS.md`. Overview and commands for this repository are appended from `PROJECT.md`.
 
 > **Reasoning doctrine:** for deep analysis or a hard bug, read `OPERATING_MANUAL.md` first, including the five-question self-test.
-> Everyday work uses Composer. Deep analysis uses Claude Opus.
+> Everyday work uses Composer 2.5 Fast. Deep analysis uses Claude Opus.
 > **Code principles:** `CODING_PRINCIPLES.md`. Do not restate them here.
 
 ## Model routing
 
-- Everyday implementation: Composer.
+- Everyday implementation: Composer 2.5 Fast.
 - Deep analysis: Claude Opus, after reading `OPERATING_MANUAL.md`.
 - When this chat delegates implementation, workers use the newest Grok slug. See `AGENTS.md` § Delegation.
 

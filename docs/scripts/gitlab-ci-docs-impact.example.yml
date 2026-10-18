@@ -16,3 +16,4 @@ docs:impact:
     - git fetch --no-tags origin "${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}"
   script:
     - python3 docs/ci/docs-impact.py --base "${CI_MERGE_REQUEST_DIFF_BASE_SHA:-origin/${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}}"
+    - python3 docs/ci/notes-append-only.py --base "${CI_MERGE_REQUEST_DIFF_BASE_SHA:-origin/${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}}"

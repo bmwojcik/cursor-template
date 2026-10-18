@@ -63,7 +63,7 @@ If you add a capability that is not a row in the INDEX, add the row.
 - Prefer “the app computes X on read via hook Y” over a ticket key. A tracker key may be a footnote, never the body.
 - If the code does not do what a ticket claimed, document the code and say the ticket claim is unverified.
 
-Templates: `docs/templates/feature.md`, `docs/templates/module-readme.md`, `docs/templates/adr.md`, `docs/templates/note.md`.
+Templates for a feature page, a module README, an ADR, and a note entry live in this repository when those files are committed.
 
 ## Notes (append-only)
 
@@ -78,7 +78,7 @@ Append a note in the same change set when:
 
 No notes for typos, obvious fixes, or what the feature doc already says.
 
-- Append at the **end** in the `docs/templates/note.md` format, at most about 6 lines. Cite type and method names, not line numbers. No secrets. Create `docs/notes/<slug>.md` only when the first entry is written.
+- Append at the **end** in the note template format, at most about 6 lines. Cite type and method names, not line numbers. No secrets. Create `docs/notes/<slug>.md` only when the first entry is written.
 - **Never** edit, reorder, reformat, or delete an existing entry. A wrong entry gets a new entry with `Supersedes: <date — title>`.
 - If you remove a trap sentence from a feature doc, append it to the notes first.
 - When a fix removes a trap, update the feature doc; the note stays as history.
@@ -96,7 +96,7 @@ Whether an Opus parent may read and search the repository, or only orchestrates,
 - Delegate multi-file implementation to workers.
 - For every worker, copy a model slug from this chat's subagent list. Use the newest Grok slug. Do not invent a slug.
 - Do not pass `inherit` and do not omit `model` unless this chat is already that Grok.
-- Opus, Claude, Sonnet, Fable, Composer, Gemini, and GPT are forbidden as workers unless the current user message names that model. If the list has no Grok slug, say so and do the work in this chat.
+- Opus, Claude, Sonnet, Fable, Composer 2.5 Fast, Gemini, and GPT are forbidden as workers unless the current user message names that model. If the list has no Grok slug, say so and do the work in this chat.
 - Prefer the `implementer` subagent for code changes. If it is missing, use `generalPurpose` with that Grok slug.
 - A worker may launch explore subagents on that same Grok slug. A worker does not launch another implementer.
 - After a worker returns, open only the files it names. If the summary and the file disagree, resume that worker with the mismatch.

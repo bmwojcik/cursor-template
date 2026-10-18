@@ -12,7 +12,7 @@
 .cursor/rules/delegation.mdc .cursor/rules/delegation.mdc
 [magento2] adapters/magento2/rules/phpunit.mdc .cursor/rules/phpunit.mdc
 
-OPERATING_MANUAL.md OPERATING_MANUAL.md
+[vendor:committed] OPERATING_MANUAL.md OPERATING_MANUAL.md
 [generic] docs/templates docs/templates
 [magento2] docs/templates docs/templates
 [shopify] adapters/shopify/docs/templates docs/templates

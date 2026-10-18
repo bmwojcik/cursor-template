@@ -13,7 +13,9 @@ Machine settings for a laptop that has the tools linked. Teammates are not asked
 - **Keep local:**
 <!-- Comma-separated paths this repo commits itself, for example docs/developer/review-change.md, docs/templates -->
 - **Docs impact:** ci
-- **Cursor template version:** 0.2.2
+- **Notes check:** ci
+<!-- ci, local, or off. Empty follows Docs impact: ci when that is ci, local when that is local, otherwise off. -->
+- **Cursor template version:** 0.3.0
 - **Merge reviewer version:** 0.1.0
 - **Review language:** English
 - **Review canvas labels:** Approved / Approved with notes / Needs changes

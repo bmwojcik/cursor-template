@@ -6,7 +6,8 @@
 <!-- Comma-separated paths or shell globs. Empty when nothing matching the hide list is committed on purpose. -->
 - **Keep local:**
 - **Docs impact:** ci
-- **Cursor template version:** 0.2.2
+- **Notes check:** ci
+- **Cursor template version:** 0.3.0
 - **Merge reviewer version:** 0.1.0
 - **Review language:** English
 - **Review canvas labels:** Approved / Approved with notes / Needs changes

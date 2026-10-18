@@ -13,7 +13,7 @@ The optional post-commit reviewer is a second repo: [merge-reviewer](https://git
 - Hook stubs that call those tools and, when enabled, merge-reviewer.
 - `install/install.sh` to link, generate, and wire a project.
 
-Everyday coding uses Composer. Deep analysis uses Claude Opus and `OPERATING_MANUAL.md`. Cursor implementation workers use the newest Grok slug. The parent chat orchestrates.
+Everyday coding uses Composer 2.5 Fast. Deep analysis uses Claude Opus and `OPERATING_MANUAL.md`. Cursor implementation workers use the newest Grok slug. The parent chat orchestrates.
 
 ## Two files
 
@@ -26,9 +26,9 @@ Everyday coding uses Composer. Deep analysis uses Claude Opus and `OPERATING_MAN
 
 The reviewer is per laptop. It runs when this checkout's installer linked merge-reviewer for the project. `install/install.sh --without-reviewer` writes `- **Merge reviewer:** off` in `.git/agent-tools.local`. `--with-reviewer` removes that line.
 
-Generated `AGENTS.md` and `CLAUDE.md` are team files. `.cursor/rules/agent-tools.mdc` and `CLAUDE.local.md` are rewritten on each install and are never committed.
+Generated `AGENTS.md` and `CLAUDE.md` are team files. They do not point at laptop-only links. `.cursor/rules/agent-tools.mdc` and `CLAUDE.local.md` hold skill and tool paths. Those two files are rewritten on each install and are never committed.
 
-Tool links are never committed. See `docs/developer/agent-layer-modes.md` to move a project from local to committed later.
+In a committed layer, `OPERATING_MANUAL.md` and `docs/ci/notes-append-only.py` are real files, so a teammate without this checkout can still read the manual and CI can run the notes check. Other tool paths stay symlinks and are never committed. See `docs/developer/agent-layer-modes.md`.
 
 ## Quick start
 

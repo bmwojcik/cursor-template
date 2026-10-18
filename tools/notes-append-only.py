@@ -8,6 +8,7 @@ hide docs/ from git). The snapshot is refreshed after every clean run.
 
   python3 tools/notes-append-only.py           worktree vs baseline (agents)
   python3 docs/scripts/notes-append-only.py --staged  index vs HEAD (pre-commit)
+  python3 docs/ci/notes-append-only.py --base <ref>  HEAD vs <ref> (CI; no snapshot)
 
 Humans only: NOTES_APPEND_ONLY_SKIP=1 accepts the current files as the new
 baseline (e.g. to remove a leaked secret). Agents never set it.
@@ -102,12 +103,47 @@ def refresh_snapshot(root: Path, snapshots: Path, current: dict[str, bytes]) -> 
         target.write_bytes(content)
 
 
+def check_base(root: Path, ref: str) -> int:
+    verify = git(root, "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}")
+    if verify.returncode != 0:
+        print(f"notes-append-only: unknown base {ref}", file=sys.stderr)
+        return 1
+    old_set = list_tree(root, ref)
+    new_set = list_tree(root, "HEAD")
+    violations: list[str] = []
+    for rel in sorted(old_set | new_set):
+        old = blob(root, f"{ref}:{rel}") if rel in old_set else None
+        new = blob(root, f"HEAD:{rel}") if rel in new_set else None
+        if old is None:
+            continue
+        if new is None:
+            violations.append(f"{rel}: removed (baseline: {ref})")
+            continue
+        if not is_append(old, new):
+            violations.append(f"{rel}: {first_difference(old, new)} (baseline: {ref})")
+    if violations:
+        print("notes-append-only: docs/notes/ is append-only — existing entries must stay byte-for-byte.", file=sys.stderr)
+        for violation in violations:
+            print(f"- {violation}", file=sys.stderr)
+        print("Restore the old text and add a new dated entry at the end (\"Supersedes …\") instead.", file=sys.stderr)
+        print("Contract: AGENTS.md § Notes", file=sys.stderr)
+        return 1
+    print("notes-append-only: ok")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--staged", action="store_true", help="read tracked notes from the index")
+    parser.add_argument("--base", help="compare docs/notes at this ref with HEAD")
     args = parser.parse_args()
+    if args.base and args.staged:
+        print("notes-append-only: pass --base or --staged, not both", file=sys.stderr)
+        return 2
 
     root = repo_root()
+    if args.base:
+        return check_base(root, args.base)
     snapshots = snapshot_dir(root)
     in_head = list_tree(root, "HEAD")
     in_index = list_index(root) if args.staged else set()

@@ -1,6 +1,6 @@
 #!/bin/sh
 # Install the cursor-template agent layer into a project.
-# install/install.sh <project> [--check|--adopt|--migrate-config|--with-reviewer|--without-reviewer]
+# install/install.sh <project> [--check|--adopt|--migrate-config|--with-reviewer|--without-reviewer|--sync-vendored]
 # Idempotent. --check prints one line per feature and exits 1 on problems.
 # A missing merge-reviewer checkout does not fail a normal install.
 # PROJECT.md "Keep local" paths are skipped by link-project (no symlink, no conflict).
@@ -13,7 +13,7 @@ template=$(CDPATH= cd -- "$here/.." && pwd)
 . "$template/hooks/resolve-tools.sh"
 
 usage() {
-    echo "usage: install/install.sh <project> [--check|--adopt|--migrate-config|--with-reviewer|--without-reviewer]" >&2
+    echo "usage: install/install.sh <project> [--check|--adopt|--migrate-config|--with-reviewer|--without-reviewer|--sync-vendored]" >&2
     exit 2
 }
 
@@ -22,6 +22,7 @@ adopt=0
 migrate=0
 with_reviewer=0
 without_reviewer=0
+sync_vendored=0
 project=
 for arg in "$@"; do
     case $arg in
@@ -30,6 +31,7 @@ for arg in "$@"; do
         --migrate-config) migrate=1 ;;
         --with-reviewer) with_reviewer=1 ;;
         --without-reviewer) without_reviewer=1 ;;
+        --sync-vendored) sync_vendored=1 ;;
         -h|--help) usage ;;
         *)
             if [ -n "$project" ]; then
@@ -43,6 +45,10 @@ done
 [ -n "$project" ] || usage
 if [ "$mode" = check ] && [ "$adopt" -eq 1 ]; then
     echo "install: pass --check or --adopt, not both" >&2
+    exit 2
+fi
+if [ "$mode" = check ] && [ "$sync_vendored" -eq 1 ]; then
+    echo "install: pass --check or --sync-vendored, not both" >&2
     exit 2
 fi
 if [ "$with_reviewer" -eq 1 ] && [ "$without_reviewer" -eq 1 ]; then
@@ -183,6 +189,20 @@ if sh "$template/install/link-project.sh" $link_args; then
     note "links: ok"
 else
     fail "links: problem"
+fi
+
+vendor_args=$project
+if [ "$mode" = check ]; then
+    vendor_args="$vendor_args --check"
+fi
+if [ "$sync_vendored" -eq 1 ]; then
+    vendor_args="$vendor_args --sync"
+fi
+vendor_status=0
+# shellcheck disable=SC2086
+python3 "$template/install/vendor_files.py" $vendor_args || vendor_status=$?
+if [ "$vendor_status" -ne 0 ]; then
+    fail "vendored: problem"
 fi
 
 foreign_hooks=0
@@ -330,10 +350,30 @@ case "$docs" in
         ;;
 esac
 
-if [ -f "$project/docs/scripts/notes-append-only.py" ]; then
-    note "notes: linked"
+_notes=$(switch_token "Notes check" || true)
+if [ -z "$_notes" ]; then
+    if [ "$docs" = "ci" ]; then
+        _notes=ci
+    elif [ "$docs" = "local" ]; then
+        _notes=local
+    else
+        _notes=off
+    fi
+fi
+if [ "$_notes" = "ci" ]; then
+    if [ -f "$project/docs/ci/notes-append-only.py" ] && [ ! -L "$project/docs/ci/notes-append-only.py" ]; then
+        note "notes: ci copy"
+    else
+        fail "notes: missing"
+    fi
+elif [ "$_notes" = "local" ]; then
+    if [ -f "$project/docs/scripts/notes-append-only.py" ]; then
+        note "notes: linked"
+    else
+        fail "notes: missing"
+    fi
 else
-    fail "notes: missing"
+    note "notes: off"
 fi
 
 if [ "$layer" = "local" ]; then

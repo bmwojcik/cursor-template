@@ -9,8 +9,8 @@ The project stores real stub files in `.githooks/`. The installer sets `git conf
 | Docs impact | Agent layer | Command |
 | --- | --- | --- |
 | `ci` | `committed` | `python3 docs/ci/docs-impact.py --staged` (blocks the commit) |
-| `ci` | `local` | same script with `--staged --include-hidden-since-head` (advisory; feature docs stay hidden, `docs/ci/` stays committed) |
-| `local` | either | linked `docs/scripts/docs-impact.py`, else `$CURSOR_TEMPLATE_HOME/tools/docs-impact.py`, with `--staged --include-hidden-since-head` (advisory) |
+| `ci` | `local` | the same script. `--include-hidden-since-head` is added only when `python3 <script> --help` lists that flag; otherwise plain `--staged`. Advisory either way. |
+| `local` | either | linked `docs/scripts/docs-impact.py`, else `$CURSOR_TEMPLATE_HOME/tools/docs-impact.py`. The hidden-since-head flag is passed only when `--help` lists it. Advisory. |
 | `off` | either | skipped |
 
 `--include-hidden-since-head` treats ignored files under `docs/` and ignored `README.md` files whose mtime is newer than HEAD as doc updates. Hidden docs are never staged, so without that flag a real edit would still look missing.
