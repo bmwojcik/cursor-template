@@ -20,7 +20,7 @@ Not tracked:
 
 The cursor-template exclude block does not list vendored paths. `OPERATING_MANUAL.md` stays visible to git in a committed layer.
 
-`git config core.hooksPath .githooks` is local git config. Each clone runs the installer once.
+`git config core.hooksPath .githooks && chmod +x .githooks/* 2>/dev/null || true` is local git config plus a mode fix for checkouts where git does not restore the executable bit. Each clone runs the installer once. In a committed layer the index must store `.githooks/*` as `100755`.
 
 ## local
 

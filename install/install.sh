@@ -161,7 +161,7 @@ copy_hooks() {
             continue
         fi
         cp "$src" "$dest"
-        chmod +x "$dest"
+        chmod 755 "$dest"
     done
     if [ "$foreign_hooks" -ne 0 ]; then
         return
@@ -169,6 +169,64 @@ copy_hooks() {
     if [ "$mode" = check ]; then
         return
     fi
+}
+
+hook_paths() {
+    git -C "$project" ls-files -- .githooks 2>/dev/null || true
+    for _name in pre-commit post-commit is-local-dev.sh resolve-tools.sh; do
+        if [ -f "$project/.githooks/$_name" ]; then
+            printf '%s\n' ".githooks/$_name"
+        fi
+    done
+}
+
+ensure_hook_index_modes() {
+    [ "$layer" = "committed" ] || return 0
+    [ "$mode" = install ] || return 0
+    _list=$(mktemp)
+    hook_paths | awk 'NF && !seen[$0]++' > "$_list"
+    while IFS= read -r rel; do
+        [ -n "$rel" ] || continue
+        [ -f "$project/$rel" ] || continue
+        chmod 755 "$project/$rel"
+        indexed=$(git -C "$project" ls-files -s -- "$rel" | awk 'NR==1 { print $1 }')
+        if [ -z "$indexed" ]; then
+            git -C "$project" add --chmod=+x -- "$rel"
+            echo "hooks: index mode fixed (+x) $rel"
+            continue
+        fi
+        if [ "$indexed" = "100755" ]; then
+            continue
+        fi
+        differs=0
+        if ! git -C "$project" diff --quiet -- "$rel"; then
+            differs=1
+        fi
+        git -C "$project" update-index --chmod=+x -- "$rel"
+        if [ "$differs" -eq 1 ]; then
+            echo "hooks: index mode fixed (+x) $rel (content also differs)"
+        else
+            echo "hooks: index mode fixed (+x) $rel"
+        fi
+    done < "$_list"
+    rm -f "$_list"
+}
+
+check_hook_index_modes() {
+    [ "$layer" = "committed" ] || return 0
+    [ "$mode" = check ] || return 0
+    _list=$(mktemp)
+    git -C "$project" ls-files -s -- .githooks > "$_list" 2>/dev/null || true
+    while read -r gitmode _hash _stage path; do
+        [ -n "$path" ] || continue
+        if [ "$gitmode" != "100755" ]; then
+            fail "hooks: not executable in git $path"
+        fi
+        if [ -e "$project/$path" ] && [ ! -x "$project/$path" ]; then
+            echo "hooks: not executable on disk $path"
+        fi
+    done < "$_list"
+    rm -f "$_list"
 }
 
 if [ "$mode" = install ]; then
@@ -220,6 +278,9 @@ if [ "$foreign_hooks" -eq 0 ]; then
         fail "hooks: missing"
     fi
 fi
+
+ensure_hook_index_modes
+check_hook_index_modes
 
 hooks_path=$(git -C "$project" config --get core.hooksPath || true)
 if [ "$mode" = install ]; then

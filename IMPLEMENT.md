@@ -35,7 +35,7 @@ install/install.sh <project>
 install/install.sh <project> --check
 ```
 
-That links files in `install/links.txt`, sets `core.hooksPath` to `.githooks`, copies hook stubs, generates `AGENTS.md` and `CLAUDE.md`, and:
+That links files in `install/links.txt`, sets `git config core.hooksPath .githooks && chmod +x .githooks/* 2>/dev/null || true`, copies hook stubs as mode 755, generates `AGENTS.md` and `CLAUDE.md`, and:
 
 - **Agent layer** `committed`: `[vendor:committed]` paths (today `OPERATING_MANUAL.md`) are real files. The sha256 is stored in `.agent-tools/vendored.lock`, which is committed with the layer. The exclude block does not list those paths. A copy that still matches the lock is updated when the template file changes. A hand-edited copy is left alone: `--check` prints `vendored-modified` and exits 1. `install.sh --sync-vendored` backs it up under `.git/cursor-template-backup/` and overwrites it.
 - **Agent layer** `local`: those same paths stay symlinks and are excluded.

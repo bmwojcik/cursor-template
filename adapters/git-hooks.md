@@ -1,6 +1,6 @@
 # Git hooks
 
-The project stores real stub files in `.githooks/`. The installer sets `git config core.hooksPath .githooks`. Stubs are copied from this repo's `hooks/` directory. They are not symlinks, so a commit still runs when the template checkout is missing — it logs one line and exits 0.
+The project stores real stub files in `.githooks/`. The installer sets `git config core.hooksPath .githooks && chmod +x .githooks/* 2>/dev/null || true`. Stubs are copied from this repo's `hooks/` directory at mode 755. They are not symlinks, so a commit still runs when the template checkout is missing — it logs one line and exits 0. With `core.fileMode=false`, the installer also records `100755` in the git index. A tracked hook left at `100644` fails `install.sh --check`.
 
 `hooks/is-local-dev.sh` is the laptop gate (Cursor, Claude Code, JetBrains, `.ddev`, `../bin/cli`, `.docs-impact.local`, `DOCS_IMPACT=1`). CI and `MAGE_MODE=production` no-op. If the file is absent, the other stubs still run.
 

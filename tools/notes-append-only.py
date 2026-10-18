@@ -6,9 +6,10 @@ prefix of the new content. Baseline per file: the HEAD blob when git tracks
 it, otherwise a local snapshot under .git/agent-notes-baseline/ (repos that
 hide docs/ from git). The snapshot is refreshed after every clean run.
 
-  python3 tools/notes-append-only.py           worktree vs baseline (agents)
-  python3 docs/scripts/notes-append-only.py --staged  index vs HEAD (pre-commit)
-  python3 docs/ci/notes-append-only.py --base <ref>  HEAD vs <ref> (CI; no snapshot)
+  python3 tools/notes-append-only.py                 template checkout; worktree vs baseline
+  python3 docs/ci/notes-append-only.py --staged      project copy; index vs HEAD (pre-commit)
+  python3 docs/ci/notes-append-only.py --base <ref>  project copy; HEAD vs <ref> (CI; no snapshot)
+  python3 docs/scripts/notes-append-only.py --staged laptop symlink when Notes check is local
 
 Humans only: NOTES_APPEND_ONLY_SKIP=1 accepts the current files as the new
 baseline (e.g. to remove a leaked secret). Agents never set it.

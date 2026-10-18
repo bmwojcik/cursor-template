@@ -51,7 +51,7 @@ skills, rules, agents, commands, docs scripts, templates, hooks, AGENTS.md, CLAU
 - A committed human doc page that the template would link (for example `docs/developer/review-change.md` or `docs/templates`) stays in git. Add that path to PROJECT.md **Keep local**. Do not delete it and do not replace it with a symlink. The doc site builds from git.
 - Show me the deletion list (files that duplicate the template or the reviewer and are safe to remove). Do not delete yet.
 - Fill PROJECT.md, seed or repair INDEX and architecture from the code (grep before citing; no secrets).
-- Run install/install.sh, then --check.
+- Run install/install.sh, then --check. A committed layer must show `.githooks/*` as `100755` in `git ls-files -s`. If a package script sets the hook path, it is `git config core.hooksPath .githooks && chmod +x .githooks/* 2>/dev/null || true`.
 - Run the project's pre-commit (or `git commit` of an empty-docs-safe change) and show the hook output.
 - If a CI docs-impact job exists, show the updated job path.
 - If the reviewer is on, tell me to run merge-reviewer's install/install-runtime.sh and bin/post-commit-review --dry-run.
