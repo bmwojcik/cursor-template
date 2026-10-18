@@ -89,7 +89,11 @@ Claude Code skips this section. Cursor chats follow it.
 
 The parent chat orchestrates. Multi-file implementation and unfamiliar areas go to worker subagents.
 
-- When this chat is Claude Opus, you may read and search the repo for analysis and diagnosis. Delegate multi-file implementation to workers.
+Project rules in `## Agent rules` override this contract where they conflict.
+
+Whether an Opus parent may read and search the repository, or only orchestrates, is decided by this project's Agent rules.
+
+- Delegate multi-file implementation to workers.
 - For every worker, copy a model slug from this chat's subagent list. Use the newest Grok slug. Do not invent a slug.
 - Do not pass `inherit` and do not omit `model` unless this chat is already that Grok.
 - Opus, Claude, Sonnet, Fable, Composer, Gemini, and GPT are forbidden as workers unless the current user message names that model. If the list has no Grok slug, say so and do the work in this chat.

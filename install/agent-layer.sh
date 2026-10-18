@@ -147,7 +147,8 @@ case "$cmd" in
         echo "agent-layer: $count files → $archive"
         ;;
     check)
-        layer=$(project_token "Agent layer" "$project/PROJECT.md")
+        repo=$project
+        layer=$(switch_token "Agent layer" || true)
         if [ "$layer" != "local" ]; then
             echo "agent-layer: mode is ${layer:-committed}; local hide is not required"
             exit 0

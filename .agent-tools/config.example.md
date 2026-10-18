@@ -5,6 +5,8 @@ Machine settings for a laptop that has the tools linked. Teammates are not asked
 <!-- Comments belong on their own line. Do not put them after a value. -->
 
 - **Stack:** generic
+- **Opus parent:**
+<!-- orchestrate-only or may-read. Empty keeps the neutral delegation sentence. -->
 - **Agent layer:** committed
 - **Keep local:**
 <!-- Comma-separated paths this repo commits itself, for example docs/developer/review-change.md, docs/templates -->
