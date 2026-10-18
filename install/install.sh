@@ -50,6 +50,7 @@ if [ "$with_reviewer" -eq 1 ] && [ "$without_reviewer" -eq 1 ]; then
     exit 2
 fi
 project=$(CDPATH= cd -- "$project" && pwd)
+refuse_tool_checkout "$project"
 repo=$project
 if [ "$migrate" -eq 1 ]; then
     python3 "$template/install/generate-agent-docs.py" "$project" --migrate-config

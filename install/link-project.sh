@@ -37,6 +37,7 @@ done
 
 [ -n "$project" ] || usage
 project=$(CDPATH= cd -- "$project" && pwd)
+refuse_tool_checkout "$project"
 [ -f "$project/PROJECT.md" ] || {
     echo "link-project: missing $project/PROJECT.md" >&2
     exit 1

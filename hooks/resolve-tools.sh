@@ -55,6 +55,34 @@ abs_git_path() {
     git -C "$1" rev-parse --path-format=absolute --git-path "$2"
 }
 
+physical_dir() {
+    (CDPATH= cd -- "$1" && pwd -P)
+}
+
+refuse_tool_checkout() {
+    _rt_target=$(physical_dir "$1") || return 0
+    _rt_self=$(physical_dir "$template") || return 0
+    if [ "$_rt_target" = "$_rt_self" ]; then
+        echo "cursor-template: refusing to run against the cursor-template checkout" >&2
+        exit 1
+    fi
+    _rt_reviewer=
+    if [ -n "${MERGE_REVIEWER_HOME:-}" ] && [ -f "$MERGE_REVIEWER_HOME/bin/post-commit-review" ]; then
+        _rt_reviewer=$(physical_dir "$MERGE_REVIEWER_HOME") || _rt_reviewer=
+    fi
+    if [ -z "$_rt_reviewer" ]; then
+        _rt_sibling=$(dirname "$_rt_self")/merge-reviewer
+        if [ -f "$_rt_sibling/bin/post-commit-review" ]; then
+            _rt_reviewer=$(physical_dir "$_rt_sibling") || _rt_reviewer=
+        fi
+    fi
+    if [ -n "$_rt_reviewer" ] && [ "$_rt_target" = "$_rt_reviewer" ]; then
+        echo "cursor-template: refusing to run against the merge-reviewer checkout" >&2
+        exit 1
+    fi
+    unset _rt_target _rt_self _rt_reviewer _rt_sibling
+}
+
 version_lt() {
     python3 - "$1" "$2" <<'PY'
 import sys

@@ -25,6 +25,7 @@ cmd=${1:-}
 project=${2:-}
 [ -n "$cmd" ] && [ -n "$project" ] || usage
 project=$(CDPATH= cd -- "$project" && pwd)
+refuse_tool_checkout "$project"
 [ -f "$project/PROJECT.md" ] || {
     echo "agent-layer: missing $project/PROJECT.md" >&2
     exit 1
