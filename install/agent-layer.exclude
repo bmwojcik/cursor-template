@@ -1,0 +1,19 @@
+# Default local agent-layer patterns. agent-layer.sh copies these into
+# .git/info/exclude. Patterns hide untracked files only.
+# When Docs impact is ci, /docs/ is narrowed so docs/ci/ can be committed.
+
+/AGENTS.md
+/CLAUDE.md
+/CLAUDE.local.md
+/.cursor/rules/agent-tools.mdc
+/PROJECT.md
+/CODING_PRINCIPLES.md
+/OPERATING_MANUAL.md
+/.cursorrules
+/.cursor/
+/.claude/
+/.agents/
+/.mcp.json
+/.githooks/
+/docs/
+/.docs-impact.local

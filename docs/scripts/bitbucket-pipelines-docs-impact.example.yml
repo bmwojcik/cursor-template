@@ -1,0 +1,10 @@
+# Step for bitbucket-pipelines.yml when Docs impact is ci.
+# The project commits docs/ci/docs-impact.py. The template checkout is not required.
+
+- step:
+    name: docs-impact
+    image: python:3.12-alpine
+    script:
+      - apk add --no-cache git
+      - git fetch origin "${BITBUCKET_PR_DESTINATION_BRANCH}"
+      - python3 docs/ci/docs-impact.py --base "origin/${BITBUCKET_PR_DESTINATION_BRANCH}"

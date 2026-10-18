@@ -1,0 +1,40 @@
+---
+description: Custom PHPUnit lives in module Test/Unit. Skip that tree unless this change must update tests.
+alwaysApply: true
+---
+
+# PHPUnit (custom modules)
+
+Skill: `.cursor/skills/write-phpunit/SKILL.md`. The command is `PROJECT.md` **Test paths**.
+
+## Everyday work
+
+Do **not** glob, search, or open `app/code/**/Test/**` or `dev/tests/` unless this change set must update tests or the write-phpunit skill is active. Do not open other modules' tests. Coverage is data-provider rows, not file count.
+
+## Same change set
+
+- Changed class already has `Test/Unit/.../{Class}Test.php` → update that file.
+- New production class with branching, mapping, or money math → add `{Class}Test.php`. When a branch stays in an observer, add a test for the observer too.
+- Price, tax, and ERP pricing math → always a provider row.
+- Skip: templates, CSS, copy, rename-only, DI XML with no logic, modules with no `Test/Unit` and no new testable class.
+
+## Editing existing tests
+
+A production change can justify a test change. A test change does not justify a production change. Default is additive: a new branch is a new provider row.
+
+- Intended contract change → edit the matching test in the same change set. State the reason in the commit message.
+- A test that is genuinely wrong → fix it in a test-only commit so unchanged production proves the old assertion was wrong.
+- Do not weaken a test to get green: do not change an expected value, delete a row, loosen `assertSame`, or drop `expectException` unless the same diff changes the production contract on purpose.
+
+## When to run
+
+Units only in chat. Integration stays on CI.
+
+Do not nag after a typo. Do stop a long feature when this chat changed production PHP in a module that has `Test/Unit` and those tests have not been run. Give the command from `PROJECT.md`, scoped to that module.
+
+## Do not
+
+- Do not invent a second test suite at the repository root.
+- Do not add PHPUnit to the blocking pre-commit hook.
+- Do not run `vendor/**/Test` in chat.
+- Do not edit a test to make failing production pass. Change the code.

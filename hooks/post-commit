@@ -1,0 +1,53 @@
+#!/bin/sh
+# cursor-template hook
+# When Merge reviewer is on, run merge-reviewer. Never fails the commit.
+# Safe when .githooks/is-local-dev.sh is absent.
+
+repo=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+cd "$repo" || exit 0
+
+if [ -f "$repo/.githooks/is-local-dev.sh" ]; then
+    if ! sh "$repo/.githooks/is-local-dev.sh"; then
+        exit 0
+    fi
+fi
+
+# shellcheck disable=SC1091
+. "$repo/.githooks/resolve-tools.sh"
+
+opt_file=$(git -C "$repo" rev-parse --git-path agent-tools.local)
+case $opt_file in
+    /*) ;;
+    *) opt_file=$repo/$opt_file ;;
+esac
+if [ -f "$opt_file" ]; then
+    opt_out=$(project_token "Merge reviewer" "$opt_file" || true)
+    if [ "$opt_out" = "off" ]; then
+        exit 0
+    fi
+fi
+if [ ! -f "$repo/.agent-tools/config.md" ] && [ -f "$repo/PROJECT.md" ]; then
+    legacy=$(project_token "Merge reviewer" "$repo/PROJECT.md" || true)
+    if [ "$legacy" = "off" ]; then
+        exit 0
+    fi
+fi
+
+resolve_tools_load_env
+resolve_cursor_template || true
+warn_template_version || true
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "merge-reviewer: python3 missing; skipped" >&2
+    exit 0
+fi
+
+if resolve_merge_reviewer; then
+    # No flags. post-commit-review detaches the review (spawn_background) and
+    # returns. --run would run it in this process and block git.
+    python3 "$MERGE_REVIEWER_HOME/bin/post-commit-review" || true
+else
+    echo "merge-reviewer: checkout missing; skipped" >&2
+fi
+
+exit 0

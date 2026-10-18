@@ -1,0 +1,17 @@
+# Copy to .github/workflows/docs-impact.yml when Docs impact is ci.
+
+name: docs-impact
+on:
+  pull_request:
+jobs:
+  docs-impact:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python3 docs/ci/docs-impact.py --base "origin/${{ github.base_ref }}"

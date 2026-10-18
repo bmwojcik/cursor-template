@@ -1,0 +1,39 @@
+{
+  "custom_code_prefixes": ["src/"],
+  "theme_or_app_roots": [],
+  "module_folder_template": "",
+  "core_module_prefixes": [],
+  "module_path_aliases": {},
+  "composer_path_aliases": {},
+  "skip_prefixes": [
+    "docs/",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "PROJECT.md",
+    "CODING_PRINCIPLES.md",
+    "OPERATING_MANUAL.md",
+    ".cursorrules",
+    ".cursor/",
+    ".claude/",
+    ".githooks/",
+    ".gitlab/",
+    ".github/",
+    "generated/",
+    "var/",
+    "node_modules/",
+    "vendor/"
+  ],
+  "skip_path_markers": ["/tests/", "/Test/", "/__tests__/"],
+  "skip_suffixes": [
+    "Test.php",
+    ".test.ts",
+    ".test.tsx",
+    ".spec.ts",
+    ".md",
+    "composer.lock",
+    "composer.json",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock"
+  ]
+}

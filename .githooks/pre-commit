@@ -1,0 +1,28 @@
+#!/bin/sh
+# cursor-template hook
+# Checks this template repository. Project stubs live in hooks/ and are copied
+# into each project by install/install.sh.
+
+repo=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+cd "$repo" || exit 0
+
+if [ -f "$repo/.githooks/is-local-dev.sh" ]; then
+    if ! sh "$repo/.githooks/is-local-dev.sh"; then
+        exit 0
+    fi
+fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "cursor-template: python3 missing; checks skipped" >&2
+    exit 0
+fi
+
+if [ -f "$repo/tools/notes-append-only.py" ]; then
+    python3 "$repo/tools/notes-append-only.py" --staged || exit 1
+fi
+
+if [ -f "$repo/tools/docs-impact.py" ]; then
+    python3 "$repo/tools/docs-impact.py" --staged || exit 1
+fi
+
+exit 0

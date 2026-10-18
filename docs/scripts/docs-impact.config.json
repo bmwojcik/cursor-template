@@ -1,0 +1,17 @@
+{
+  "custom_code_prefixes": [],
+  "theme_or_app_roots": [],
+  "module_folder_template": "",
+  "core_module_prefixes": [],
+  "module_path_aliases": {},
+  "composer_path_aliases": {},
+  "skip_prefixes": [
+    "docs/",
+    "install/",
+    "hooks/",
+    "tools/",
+    "adapters/"
+  ],
+  "skip_path_markers": [],
+  "skip_suffixes": [".md"]
+}

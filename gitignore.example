@@ -1,0 +1,13 @@
+# Optional lines for a project .gitignore. Tool symlinks are ignored via
+# .git/info/exclude (the installer writes that block). Do not gitignore all of
+# .cursor/ — project-specific rules in a committed agent layer must stay visible.
+
+.docs-impact.local
+var/review-change.*
+var/*.vsix
+*.canvas.tsx
+
+.env
+.env.*
+!.env.example
+cursor.env

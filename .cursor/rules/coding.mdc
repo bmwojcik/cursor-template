@@ -1,0 +1,14 @@
+---
+description: Shared coding principles live in CODING_PRINCIPLES.md. Do not duplicate them here.
+alwaysApply: true
+---
+
+# Coding principles
+
+Follow `CODING_PRINCIPLES.md`. When this repo has copied an adapter fragment for `PROJECT.md` **Stack**, follow that too. Do not duplicate those lists here.
+
+When writing or reviewing application code:
+
+- Names carry the meaning. Do not write comments or doc prose that restates the method, a branch, or a business rule. Keep parameter and return tags only. A comment is only for a constraint the code cannot show. Do not leave commented-out code.
+- Assume config, attributes, array keys, and records may be missing.
+- Do not fetch in a loop. Cache only data that is safe for the cache layer this project uses. Customer-specific HTML is private under a full-page cache.

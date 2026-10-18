@@ -1,0 +1,101 @@
+#!/bin/sh
+# cursor-template hook
+# Docs impact, then the notes append-only check.
+# A missing tool checkout logs one line and does not fail the commit.
+# A real docs-impact or notes violation still fails the commit.
+# Safe when .githooks/is-local-dev.sh is absent.
+
+repo=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+cd "$repo" || exit 0
+
+if [ -f "$repo/.githooks/is-local-dev.sh" ]; then
+    if ! sh "$repo/.githooks/is-local-dev.sh"; then
+        exit 0
+    fi
+fi
+
+# shellcheck disable=SC1091
+. "$repo/.githooks/resolve-tools.sh"
+resolve_tools_load_env
+resolve_cursor_template || true
+warn_template_version || true
+
+if [ ! -f "$repo/PROJECT.md" ] && [ ! -f "$repo/.agent-tools/config.md" ]; then
+    echo "cursor-template: PROJECT.md missing; hook skipped" >&2
+    exit 0
+fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "cursor-template: python3 missing; hook skipped" >&2
+    exit 0
+fi
+
+docs=$(switch_token "Docs impact" || true)
+layer=$(switch_token "Agent layer" || true)
+# Hidden docs are never staged. Local docs-impact, and ci combined with a
+# local agent layer, warn instead of blocking. Committed ci still blocks.
+advisory=0
+if [ "$docs" = "local" ] || [ "$layer" = "local" ]; then
+    advisory=1
+fi
+
+run_docs() {
+    _script=$1
+    shift
+    if [ ! -f "$_script" ]; then
+        echo "docs-impact: missing $_script; skipped" >&2
+        return 0
+    fi
+    python3 "$_script" "$@"
+    _status=$?
+    if [ "$_status" -eq 0 ]; then
+        return 0
+    fi
+    if [ "$advisory" -eq 1 ]; then
+        echo "docs-impact: advisory (Agent layer local) — update the hidden docs listed above"
+        return 0
+    fi
+    return "$_status"
+}
+
+case "$docs" in
+    ci)
+        if [ "$advisory" -eq 1 ]; then
+            run_docs "$repo/docs/ci/docs-impact.py" --staged --include-hidden-since-head || exit 1
+        else
+            run_docs "$repo/docs/ci/docs-impact.py" --staged || exit 1
+        fi
+        ;;
+    local)
+        script=
+        if [ -f "$repo/docs/scripts/docs-impact.py" ]; then
+            script=$repo/docs/scripts/docs-impact.py
+        elif [ -n "${CURSOR_TEMPLATE_HOME:-}" ] && [ -f "$CURSOR_TEMPLATE_HOME/tools/docs-impact.py" ]; then
+            script=$CURSOR_TEMPLATE_HOME/tools/docs-impact.py
+        fi
+        if [ -n "$script" ]; then
+            run_docs "$script" --staged --include-hidden-since-head || exit 1
+        else
+            echo "docs-impact: template checkout missing; skipped" >&2
+        fi
+        ;;
+    off|"")
+        ;;
+    *)
+        echo "docs-impact: unknown Docs impact '$docs'; skipped" >&2
+        ;;
+esac
+
+notes=
+if [ -f "$repo/docs/scripts/notes-append-only.py" ]; then
+    notes=$repo/docs/scripts/notes-append-only.py
+elif [ -n "${CURSOR_TEMPLATE_HOME:-}" ] && [ -f "$CURSOR_TEMPLATE_HOME/tools/notes-append-only.py" ]; then
+    notes=$CURSOR_TEMPLATE_HOME/tools/notes-append-only.py
+fi
+if [ -n "$notes" ]; then
+    python3 "$notes" --staged || exit 1
+else
+    echo "notes-append-only: template checkout missing; skipped" >&2
+fi
+
+exit 0

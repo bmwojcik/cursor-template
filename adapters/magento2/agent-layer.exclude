@@ -1,0 +1,3 @@
+# Extra local-mode patterns for Stack magento2.
+/app/code/*/*/README.md
+/app/design/*/*/*/README.md

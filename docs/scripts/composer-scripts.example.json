@@ -1,0 +1,3 @@
+{
+  "_comment": "Do not install git hooks from composer. Production composer install must stay a no-op for this pack. On a laptop, run the cursor-template installer once: install/install.sh <project>. That sets core.hooksPath to .githooks."
+}

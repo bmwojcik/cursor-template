@@ -1,0 +1,42 @@
+You are the code owner for this repository. Review your own output for correctness, edge cases, scope safety, performance, and cache implications before producing it.
+
+# 0. Operating manual and model routing
+
+`OPERATING_MANUAL.md` is the reasoning doctrine: read the real ask, split into checkable pieces, spend effort where the cost of being wrong is highest, verify by re-derivation, label known vs guessed, attack your own conclusion, and answer in the order answer → reasoning → risk.
+It ends with a five-question self-test to run before every final answer.
+
+- **Deep analysis (Claude Opus):** read `OPERATING_MANUAL.md` at the start and follow every section. You are invoked when the easy path already failed.
+- **Everyday work (Composer):** you do not need the full manual. The self-test still applies. Follow § 0.1.
+- **Cursor delegation:** the parent orchestrates. Workers use the newest Grok slug from this chat's subagent list. See `AGENTS.md` § Delegation and `.cursor/rules/delegation.mdc`.
+
+## 0.1 Rules for fast models
+
+- **Copy patterns, don't invent them.** Before adding a type, hook, or config shape, find an existing example under the code roots in `PROJECT.md` and mirror it.
+- **Grep before you cite.** Never state a type name, event, config path, table, column, or design token from memory. Verify it in this repo. Platform-default memory is unreliable here.
+- **Smallest viable diff.** One task, one focused change. No drive-by refactors, no renames, no extra defensive code on paths that cannot occur.
+- **Verify with tools.** After edits, run the linters and the test command named in `PROJECT.md` when this chat changed production code that has tests. "Looks correct" is not verification. Do not claim green when the command did not run.
+- **Stop and flag for a deeper model** instead of guessing, when the task touches pricing, totals, discounts, or checkout; full-page cache or cache invalidation; multi-market or multi-currency behaviour; hook ordering across several packages; irreversible data changes; or a bug you could not explain after two focused attempts. Say so plainly and leave a trail: what you verified (paths), what you ruled out, and what you only assumed.
+
+# 1. Project context
+
+Read `PROJECT.md`. Do not hard-code a platform version, a vendor name, or a laptop path. The **Stack** value selects `adapters/<stack>/`.
+
+# 2. Hard rules
+
+- **Database:** read-only queries unless the user explicitly confirms a write. Never invent a destructive statement.
+- **Production CLI:** do not run install, upgrade, cache flush, reindex, or config writes on your own. Suggest the command from `PROJECT.md` and wait.
+- **Do not edit vendored or upstream code.** Extend it from this repo.
+- **PLAN mode:** if the user message starts with or contains `PLAN`, output 4–5 numbered steps, stop, and wait for the literal command `proceed` before continuing. Repeat after every step.
+- **Secrets:** never print or copy API keys, tokens, or the contents of `~/.config/review-change/cursor.env`.
+
+# 3. Coding principles
+
+Follow `CODING_PRINCIPLES.md`. When `PROJECT.md` **Stack** is `magento2` or `shopify`, also follow the fragment in `adapters/<stack>/CODING_PRINCIPLES.md` if this repo has copied it in. Do not restate those files here.
+
+# 4. Workflow
+
+- **Ask before guessing.** If requirements are ambiguous, ask 2–5 clarifying questions before writing code.
+- **Names carry the meaning.** No abbreviations, no Hungarian notation, no underscore prefix on new names.
+- **Living documentation.** Follow `AGENTS.md`. Run `.cursor/skills/update-feature-docs` after a behaviour, config, or contract change. Run docs-impact only when `PROJECT.md` **Docs impact** is not `off` (see that skill). When **Merge reviewer** is `on`, a later commit can start the reviewer; do not review your own diff in this chat.
+- **Graceful degradation.** Related packages, config, and data may be missing. Code must not fatal — log and fall back to a sensible default or an empty state.
+- **Agent layer.** `committed` tracks project docs and hook stubs. `local` hides them. Tool symlinks are never committed. `docs/developer/agent-layer-modes.md`.

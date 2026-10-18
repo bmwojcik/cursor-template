@@ -1,0 +1,37 @@
+---
+description: When and how to update project docs. INDEX first. Notes are append-only.
+alwaysApply: true
+---
+
+# Documentation contract
+
+Follow `AGENTS.md`. Do not invent a parallel docs system.
+
+## Read
+
+1. Always open `docs/features/INDEX.md`.
+2. Deep-read only the INDEX rows that match the diff, plus READMEs of touched packages (see `PROJECT.md` code roots), plus `docs/notes/<slug>.md` of those rows and `docs/notes/_general.md` when they exist.
+3. Do not read every package README. Full sweep only for a platform-wide ADR.
+
+## Write (same change set as the code)
+
+Update current-state docs when behaviour, config, API or webhooks, payments, shipping, tax, ERP, or cache change.
+
+- Package-local → that package's README
+- Cross-package → `docs/features/<slug>.md`, or the architecture page named in the INDEX until a feature file exists
+- "Why we chose X" → `docs/architecture/decisions/`
+- No changelog per edit. No secrets.
+
+Describe the mechanism from this repo's code (2–4 sentences). Grep before citing names. A ticket tracker is a footnote, not the body.
+
+Use `.cursor/skills/update-feature-docs/SKILL.md`.
+
+When `PROJECT.md` **Docs impact** is `off`, do not run docs-impact. When it is `ci` or `local`, the skill names the command.
+
+## Notes (append-only)
+
+Trap, debugging path, rejected approach, or code contradicting docs or a ticket → append an entry at the end of `docs/notes/<slug>.md` (no row: `_general.md`), format `docs/templates/note.md`. Never edit or delete an existing entry; correct it with a new `Supersedes:` entry. Then run `python3 docs/scripts/notes-append-only.py` until `ok`. Cite type and method names, not line numbers. Details: `AGENTS.md` § Notes.
+
+## Review
+
+When `PROJECT.md` **Merge reviewer** is `on`, review after a coherent feature or bugfix, not after every file. Do not review in the coding chat. Setup: `docs/developer/review-change.md`. When the switch is `off`, skip this.
