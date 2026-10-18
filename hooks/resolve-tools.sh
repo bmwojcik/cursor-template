@@ -46,6 +46,11 @@ switch_token() {
     project_token "$1" "$_st_file"
 }
 
+switch_field() {
+    _sf_file=$(tool_config_path) || return 1
+    project_field "$1" "$_sf_file"
+}
+
 version_lt() {
     python3 - "$1" "$2" <<'PY'
 import sys

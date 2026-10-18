@@ -167,6 +167,48 @@ case "$cmd" in
             exit 1
         fi
         rm -f "$patterns" "$err"
+        allow=$(switch_field "Agent layer tracked" || true)
+        kept=$(mktemp)
+        allowed_out=$(mktemp)
+        python3 - "$allow" "$leaks" "$kept" "$allowed_out" <<'PY'
+import fnmatch
+import sys
+from pathlib import Path
+
+allow_raw, leaks_path, keep_path, ok_path = sys.argv[1:5]
+patterns = [part.strip().lstrip("./") for part in allow_raw.split(",") if part.strip()]
+
+
+def matches(path, pattern):
+    if any(char in pattern for char in "*?["):
+        folded = pattern.replace("**", "*")
+        return fnmatch.fnmatch(path, pattern) or fnmatch.fnmatch(path, folded)
+    if pattern.endswith("/"):
+        return path.startswith(pattern)
+    return path == pattern
+
+
+kept_paths = []
+allowed_paths = []
+for line in Path(leaks_path).read_text(encoding="utf-8").splitlines():
+    path = line.strip()
+    if not path:
+        continue
+    if any(matches(path, pattern) for pattern in patterns):
+        allowed_paths.append(path)
+    else:
+        kept_paths.append(path)
+Path(keep_path).write_text("".join(f"{item}\n" for item in kept_paths), encoding="utf-8")
+Path(ok_path).write_text("".join(f"{item}\n" for item in allowed_paths), encoding="utf-8")
+PY
+        if [ -s "$allowed_out" ]; then
+            while IFS= read -r allowed_path; do
+                [ -n "$allowed_path" ] || continue
+                echo "tracked-allowed: $allowed_path"
+            done < "$allowed_out"
+        fi
+        mv "$kept" "$leaks"
+        rm -f "$allowed_out"
         if [ -s "$leaks" ]; then
             echo "agent-layer: tracked or staged agent-layer files:" >&2
             cat "$leaks" >&2

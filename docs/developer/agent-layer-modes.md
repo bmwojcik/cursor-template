@@ -1,6 +1,6 @@
 # Agent layer: committed or local
 
-`PROJECT.md` **Agent layer** chooses whether project docs are git history or a laptop-only layer. Tool symlinks are never committed in either mode. `install/link-project.sh` writes them into `.git/info/exclude` under `# >>> cursor-template`.
+`.agent-tools/config.md` **Agent layer** chooses whether project docs are git history or a laptop-only layer. `PROJECT.md` is only the fallback when that file is missing. Tool symlinks are never committed in either mode. `install/link-project.sh` writes them into `.git/info/exclude` under `# >>> cursor-template`.
 
 ## committed
 
@@ -28,11 +28,21 @@ Patterns hide untracked files only. A file that is already tracked still shows w
 
 When **Docs impact** is `ci`, the exclude list uses `/docs/*` and re-includes `docs/ci/` so CI can run a committed copy. Feature docs stay hidden. The laptop pre-commit then runs that committed script with `--include-hidden-since-head` and does not block: hidden feature docs cannot be staged, so the check is advisory and counts doc files edited since HEAD. CI still runs `docs/ci/docs-impact.py --staged` without that flag and can block the pipeline. Prefer `Docs impact: local` until the team commits the feature docs.
 
-`sh install/agent-layer.sh check <project>` exits 1 when a hidden path is still visible in `git status`.
+`sh install/agent-layer.sh check <project>` lists index paths that match the hide patterns. A match fails the check unless it is listed in **Agent layer tracked**. `install.sh --check` runs that same check when the layer is local.
+
+## Intentionally tracked paths
+
+**Agent layer tracked** in `.agent-tools/config.md` is a comma-separated list of repo-relative paths or shell globs that stay in git even though they match the hide list. `check` and `install.sh --check` print `tracked-allowed: <path>` for each match and still fail on every other match.
+
+A value with no glob character is an exact path. A trailing slash is a directory prefix. `*`, `?`, and `[]` are shell globs.
+
+```text
+- **Agent layer tracked:** app/code/Acme/Widget/README.md
+```
 
 ## Move local → committed
 
-1. Set **Agent layer** to `committed` in `PROJECT.md`.
+1. Set **Agent layer** to `committed` in `.agent-tools/config.md`.
 2. If CI should run docs-impact, set **Docs impact** to `ci`. Add the job from `docs/scripts/gitlab-ci-docs-impact.example.yml`, `github-actions-docs-impact.example.yml`, or `bitbucket-pipelines-docs-impact.example.yml`. The script path in those jobs is `docs/ci/docs-impact.py`.
 3. Run `install/install.sh <project>`. That removes the agent-layer exclude block (`agent-layer.sh uninstall`) and, when the CI script is missing, copies it. Link excludes stay.
 4. `git status` now shows `PROJECT.md`, `AGENTS.md`, `CLAUDE.md`, `docs/`, and `.githooks/`. Review the diff. Do not add the symlinks (`git check-ignore -v` on one of them should name the cursor-template block).

@@ -8,10 +8,12 @@ Machine settings for a laptop that has the tools linked. Teammates are not asked
 - **Opus parent:**
 <!-- orchestrate-only or may-read. Empty keeps the neutral delegation sentence. -->
 - **Agent layer:** committed
+- **Agent layer tracked:**
+<!-- Comma-separated paths or shell globs that stay in git even when they match the local hide list. -->
 - **Keep local:**
 <!-- Comma-separated paths this repo commits itself, for example docs/developer/review-change.md, docs/templates -->
 - **Docs impact:** ci
-- **Cursor template version:** 0.2.0
+- **Cursor template version:** 0.2.2
 - **Merge reviewer version:** 0.1.0
 - **Review language:** English
 - **Review canvas labels:** Approved / Approved with notes / Needs changes

@@ -338,6 +338,12 @@ fi
 if [ "$layer" = "local" ]; then
     if [ "$mode" = install ]; then
         sh "$template/install/agent-layer.sh" install "$project"
+    elif [ "$mode" = check ]; then
+        if sh "$template/install/agent-layer.sh" check "$project"; then
+            note "agent-layer-check: ok"
+        else
+            fail "agent-layer-check: tracked files"
+        fi
     fi
     note "agent-layer-hide: on"
 else

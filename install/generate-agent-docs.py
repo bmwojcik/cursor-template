@@ -40,6 +40,7 @@ FENCE_RE = re.compile(r"```(?:text)?\n(.*?)```", re.S)
 MOVE_KEYS = {
     "Stack",
     "Agent layer",
+    "Agent layer tracked",
     "Keep local",
     "Docs impact",
     "Cursor template version",
