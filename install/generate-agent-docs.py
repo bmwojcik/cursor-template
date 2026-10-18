@@ -364,10 +364,15 @@ def link_only_paths(root: Path, keys: dict[str, str]) -> list[str]:
 
 
 def scan_text(rel: str, text: str, paths: list[str]) -> None:
+    in_entry = False
+    notes_file = rel.startswith("docs/notes/") and rel.endswith(".md")
     for number, line in enumerate(text.splitlines(), start=1):
+        if notes_file and line.startswith("### "):
+            in_entry = True
         for path in paths:
             if path and path in line:
-                print(f"team-ref-to-local {rel}:{number} {path}")
+                kind = "team-ref-in-history" if notes_file and in_entry else "team-ref-to-local"
+                print(f"{kind} {rel}:{number} {path}")
                 break
 
 
@@ -386,10 +391,13 @@ def iter_committed_docs(project: Path):
 
 def scan_team_refs(root: Path, project: Path) -> None:
     keys, _bodies, _legacy = load_settings(project)
+    layer = token(keys.get("Agent layer", "committed")) or "committed"
+    if layer == "local":
+        print("team-refs: skipped (agent layer local)")
+        return
     paths = link_only_paths(root, keys)
     if not paths:
         return
-    layer = token(keys.get("Agent layer", "committed")) or "committed"
     targets: list[Path] = []
     for name in ("AGENTS.md", "CLAUDE.md", ".cursorrules", "PROJECT.md", "CODING_PRINCIPLES.md"):
         path = project / name
