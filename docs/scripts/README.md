@@ -18,7 +18,7 @@ python3 tools/notes-append-only.py --staged
 
 From a project after install, the same commands are `docs/ci/docs-impact.py` or `docs/scripts/docs-impact.py`, and `docs/scripts/notes-append-only.py`.
 
-Skip docs-impact: `DOCS_IMPACT_SKIP=1` or `[skip docs-impact]` / `[skip docs]` in the subject.
+One-off skip on a laptop: `DOCS_IMPACT_SKIP=1`. Tokens `[skip docs-impact]` and `[skip docs]` apply once the commit exists (CI and `--base`).
 
 Humans only: `NOTES_APPEND_ONLY_SKIP=1` accepts the current notes as the new baseline.
 

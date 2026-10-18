@@ -12,6 +12,10 @@ Usage (from the project root):
   python3 docs/ci/docs-impact.py --staged
   python3 docs/scripts/docs-impact.py --base origin/main
   python3 tools/docs-impact.py --files-from -
+
+`--staged` (the laptop pre-commit) does not read `[skip docs]` or `[skip docs-impact]`
+from the previous commit. `DOCS_IMPACT_SKIP=1` is the one-off laptop skip.
+Those subject tokens apply when the commit already exists (`--base`, CI).
 """
 
 from __future__ import annotations
@@ -508,9 +512,11 @@ def git_changed_files(
     return unique_paths(files)
 
 
-def should_skip(root: Path) -> str | None:
+def should_skip(root: Path, staged: bool = False) -> str | None:
     if os.environ.get("DOCS_IMPACT_SKIP") in {"1", "true", "yes"}:
         return "DOCS_IMPACT_SKIP"
+    if staged:
+        return None
     subject = git_output(root, ["log", "-1", "--pretty=%s"])
     text = subject[0] if subject else ""
     for token in SKIP_TOKENS:
@@ -519,9 +525,9 @@ def should_skip(root: Path) -> str | None:
     return None
 
 
-def analyse(root: Path, changed: list[str], cfg: Config) -> Report:
+def analyse(root: Path, changed: list[str], cfg: Config, staged: bool = False) -> Report:
     report = Report()
-    skip = should_skip(root)
+    skip = should_skip(root, staged)
     if skip:
         report.skipped = skip
         return report
@@ -601,7 +607,7 @@ def main() -> int:
     else:
         changed = git_changed_files(root, args.base, args.staged, args.include_hidden_since_head)
 
-    return print_report(analyse(root, changed, cfg))
+    return print_report(analyse(root, changed, cfg, staged=args.staged))
 
 
 if __name__ == "__main__":

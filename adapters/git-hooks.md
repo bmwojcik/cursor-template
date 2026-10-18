@@ -15,7 +15,7 @@ The project stores real stub files in `.githooks/`. The installer sets `git conf
 
 `--include-hidden-since-head` treats ignored files under `docs/` and ignored `README.md` files whose mtime is newer than HEAD as doc updates. Hidden docs are never staged, so without that flag a real edit would still look missing.
 
-Advisory mode prints the findings and `docs-impact: advisory (Agent layer local) — update the hidden docs listed above`, then exits 0. It does not fail the commit. A notes violation still does. A missing script does not.
+Advisory mode prints the findings and `docs-impact: advisory (Agent layer local) — update the hidden docs listed above`, then exits 0. It does not fail the commit. A notes violation still does. A missing script does not. The hook always passes `--staged`, so `[skip docs]` in an older subject does not skip this run. `DOCS_IMPACT_SKIP=1` does.
 
 ## post-commit
 

@@ -38,4 +38,4 @@ Laptop hooks live in `.githooks/` and run only when `is-local-dev.sh` says this 
 
 Install with `install/install.sh` from the cursor-template checkout. Do not install hooks from production dependency install.
 
-Skip docs-impact once: `DOCS_IMPACT_SKIP=1` or `[skip docs-impact]` in the subject. Skip review: `REVIEW_CHANGE=0` or `[skip review]`.
+One-off skip on a laptop: `DOCS_IMPACT_SKIP=1`. Tokens `[skip docs-impact]` and `[skip docs]` apply once the commit exists (CI and `--base`). Skip review: `REVIEW_CHANGE=0` or `[skip review]`.
