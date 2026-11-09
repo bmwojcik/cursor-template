@@ -1,6 +1,8 @@
 # Tool config — generic
 
 - **Stack:** generic
+- **Agent host:** both
+<!-- cursor, claude, or both. Which tool's links and laptop files this laptop gets. Missing means both. A line in <git-dir>/agent-tools.local overrides this. docs/developer/agent-hosts.md -->
 - **Agent layer:** committed
 - **Agent layer tracked:**
 <!-- Comma-separated paths or shell globs. Empty when nothing matching the hide list is committed on purpose. -->

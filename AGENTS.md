@@ -86,6 +86,7 @@ No notes for typos, obvious fixes, or what the feature doc already says.
 ## Delegation (Cursor only)
 
 Claude Code skips this section. Cursor chats follow it.
+Claude Code delegation is in `CLAUDE.md`.
 
 The parent chat orchestrates. Multi-file implementation and unfamiliar areas go to worker subagents.
 
@@ -94,9 +95,10 @@ Project rules in `## Agent rules` override this contract where they conflict.
 Whether an Opus parent may read and search the repository, or only orchestrates, is decided by this project's Agent rules.
 
 - Delegate multi-file implementation to workers.
-- For every worker, copy a model slug from this chat's subagent list. Use the newest Grok slug. Do not invent a slug.
+- For every implementation worker, copy a model slug from this chat's subagent list. Use the newest Grok slug. Do not invent a slug.
 - Do not pass `inherit` and do not omit `model` unless this chat is already that Grok.
-- Opus, Claude, Sonnet, Fable, Composer 2.5 Fast, Gemini, and GPT are forbidden as workers unless the current user message names that model. If the list has no Grok slug, say so and do the work in this chat.
+- Composer 2.5 Fast is allowed for search, explore, and read-only research subagents, and for creative or drafting subagents. Copy its slug from the same list.
+- Opus, Claude, Sonnet, Fable, Gemini, and GPT are forbidden as workers unless the current user message names that model. Composer 2.5 Fast is forbidden for implementation. If the list has no Grok slug, say so and do the work in this chat.
 - Prefer the `implementer` subagent for code changes. If it is missing, use `generalPurpose` with that Grok slug.
 - A worker may launch explore subagents on that same Grok slug. A worker does not launch another implementer.
 - After a worker returns, open only the files it names. If the summary and the file disagree, resume that worker with the mismatch.

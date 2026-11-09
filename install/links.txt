@@ -1,7 +1,10 @@
 # path-in-template path-in-project
 # Optional leading [filter]. A bare word is a Stack value (magento2, shopify, generic).
 # [docs-impact:local] is included only when PROJECT.md Docs impact is local.
-# Every .cursor/skills/<name> line is also linked at .claude/skills/<name>.
+# [host:cursor] and [host:claude] link only when the Agent host includes that tool.
+# Filters join with commas and all must match, for example [host:claude,magento2].
+# A dest under .cursor/ is linked only for host cursor or both. A dest under .claude/ only for claude or both.
+# Every .cursor/skills/<name> line is also linked at .claude/skills/<name> (host claude or both).
 
 .cursor/skills/update-feature-docs .cursor/skills/update-feature-docs
 .cursor/skills/reproduce-jira .cursor/skills/reproduce-jira
@@ -12,6 +15,13 @@
 .cursor/rules/delegation.mdc .cursor/rules/delegation.mdc
 [magento2] adapters/magento2/rules/phpunit.mdc .cursor/rules/phpunit.mdc
 
+# Claude Code only. coding.md reuses the .mdc file; Claude Code ignores the Cursor frontmatter keys.
+# documentation.mdc is not linked: its text is the AGENTS.md contract, which the generated CLAUDE.md inlines.
+# .claude/rules/phpunit.md is generated (generate-agent-docs.py), not linked: a symlink that points outside
+# the project loads only without `paths:`, and the rule must load for test files only.
+[host:claude] claude/agents/implementer.md .claude/agents/implementer.md
+[host:claude] .cursor/rules/coding.mdc .claude/rules/coding.md
+
 [vendor:committed] OPERATING_MANUAL.md OPERATING_MANUAL.md
 [generic] docs/templates docs/templates
 [magento2] docs/templates docs/templates
@@ -19,6 +29,7 @@
 docs/developer/review-change.md docs/developer/review-change.md
 docs/developer/reproduce-jira.md docs/developer/reproduce-jira.md
 docs/developer/agent-layer-modes.md docs/developer/agent-layer-modes.md
+docs/developer/agent-hosts.md docs/developer/agent-hosts.md
 
 tools/notes-append-only.py docs/scripts/notes-append-only.py
 [docs-impact:local] tools/docs-impact.py docs/scripts/docs-impact.py

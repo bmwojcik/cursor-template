@@ -8,5 +8,5 @@ alwaysApply: true
 Follow `AGENTS.md` § Delegation. Do not duplicate that section here.
 
 - A Claude Opus chat may read and search the repo for analysis, diagnosis, and verification. Delegate multi-file implementation and edits to workers.
-- Copy the newest Grok slug from this chat's available subagent model list. Opus, Claude, Sonnet, Fable, Composer 2.5 Fast, Gemini, and GPT are forbidden as workers unless the current user message names that model.
+- Copy the newest Grok slug from this chat's available subagent model list for implementation workers. Composer 2.5 Fast is allowed for search, explore, read-only research, and creative or drafting subagents. Opus, Claude, Sonnet, Fable, Gemini, and GPT are forbidden as workers unless the current user message names that model.
 - When `PROJECT.md` **Merge reviewer** is `on`, do not launch `project-reviewer` from the implementation flow. That review stays a fresh run owned by merge-reviewer.

@@ -1,6 +1,8 @@
 # Tool config — Magento 2
 
 - **Stack:** magento2
+- **Agent host:** both
+<!-- cursor, claude, or both. Which tool's links and laptop files this laptop gets. Missing means both. A line in <git-dir>/agent-tools.local overrides this. docs/developer/agent-hosts.md -->
 - **Agent layer:** local
 - **Agent layer tracked:**
 <!-- Comma-separated paths or shell globs that stay in git, for example app/code/Acme/Widget/README.md -->

@@ -2,7 +2,7 @@
 
 Human copy-paste. The agent follows [`IMPLEMENT.md`](./IMPLEMENT.md).
 
-Everyday coding: Composer 2.5 Fast. Deep analysis: Claude Opus with `OPERATING_MANUAL.md`. Cursor workers: the newest Grok slug. The reviewer, when enabled, is [merge-reviewer](https://github.com/bmwojcik/merge-reviewer), not this chat.
+Cursor: everyday coding on Composer 2.5 Fast, workers on the newest Grok slug. Claude Code: subagents on Sonnet. Deep analysis in both: Claude Opus with `OPERATING_MANUAL.md`. The reviewer, when enabled, is [merge-reviewer](https://github.com/bmwojcik/merge-reviewer), not this chat.
 
 ## Before you paste
 
@@ -15,16 +15,17 @@ Everyday coding: Composer 2.5 Fast. Deep analysis: Claude Opus with `OPERATING_M
 ```text
 You are landing cursor-template onto THIS repository. Read IMPLEMENT.md and follow it. Do not invent a second docs system. Do not copy another shop's modules, agency names, or laptop paths.
 
-Ask me these three questions first and wait for the answers before you write files:
+Ask me these four questions first and wait for the answers before you write files:
 1. Agent layer: committed or local?
 2. Reviewer on this laptop: yes or no?
 3. Docs impact: ci, local, or off?
+4. Agent host: cursor, claude, or both? Default is the tool you are running in (Claude Code means claude, Cursor means cursor). I may answer both.
 
 Then:
 - Detect the stack (magento2, shopify, or generic) and read adapters/<stack>/.
 - Write PROJECT.md from PROJECT.example.md: overview, stack prose, code roots, environment commands, docs language, quality bar, agent rules. No tool switches.
-- Write .agent-tools/config.md from .agent-tools/config.example.md with the three answers, git host, test command, and base branch.
-- If I said no to the reviewer, run install.sh with --without-reviewer. If I said yes, run install.sh and tell me only if the reviewer checkout is missing.
+- Write .agent-tools/config.md from .agent-tools/config.example.md with the four answers (agent host included), git host, test command, and base branch.
+- If I said no to the reviewer, run install.sh with --without-reviewer. If I said yes, run install.sh and tell me only if the reviewer checkout is missing. Pass --host <my agent host answer> in both cases.
 - Seed docs/features/INDEX.md, docs/notes, and docs/architecture from THIS code. Mechanism in 2–4 sentences. Grep before you cite a type, event, config path, table, or column. No secrets.
 - Run install.sh --check.
 
@@ -36,10 +37,11 @@ Work until the IMPLEMENT.md checklist is honest. If you cannot prove a system fr
 ```text
 You are migrating THIS repository onto cursor-template. Read IMPLEMENT.md. Do not delete anything until the checks at the end pass.
 
-Ask me these three questions first and wait:
+Ask me these four questions first and wait:
 1. Agent layer: committed or local?
 2. Reviewer on this laptop: yes or no?
 3. Docs impact: ci, local, or off?
+4. Agent host: cursor, claude, or both? Default is the tool you are running in (Claude Code means claude, Cursor means cursor). I may answer both.
 
 Then compare every local copy with the tool repos (cursor-template, and merge-reviewer when I said yes):
 skills, rules, agents, commands, docs scripts, templates, hooks, AGENTS.md, CLAUDE.md.
@@ -51,7 +53,7 @@ skills, rules, agents, commands, docs scripts, templates, hooks, AGENTS.md, CLAU
 - A committed human doc page that the template would link (for example `docs/developer/review-change.md` or `docs/templates`) stays in git. Add that path to PROJECT.md **Keep local**. Do not delete it and do not replace it with a symlink. The doc site builds from git.
 - Show me the deletion list (files that duplicate the template or the reviewer and are safe to remove). Do not delete yet.
 - Fill PROJECT.md, seed or repair INDEX and architecture from the code (grep before citing; no secrets).
-- Run install/install.sh, then --check. A committed layer must show `.githooks/*` as `100755` in `git ls-files -s`. If a package script sets the hook path, it is `git config core.hooksPath .githooks && chmod +x .githooks/* 2>/dev/null || true`.
+- Run install/install.sh --host <my agent host answer>, then --check. A committed layer must show `.githooks/*` as `100755` in `git ls-files -s`. If a package script sets the hook path, it is `git config core.hooksPath .githooks && chmod +x .githooks/* 2>/dev/null || true`.
 - Run the project's pre-commit (or `git commit` of an empty-docs-safe change) and show the hook output.
 - If a CI docs-impact job exists, show the updated job path.
 - If the reviewer is on, tell me to run merge-reviewer's install/install-runtime.sh and bin/post-commit-review --dry-run.

@@ -1,9 +1,14 @@
 #!/bin/sh
 # Install the cursor-template agent layer into a project.
-# install/install.sh <project> [--check|--adopt|--migrate-config|--with-reviewer|--without-reviewer|--sync-vendored]
+# install/install.sh <project> [--check|--adopt|--migrate-config|--with-reviewer|--without-reviewer|--sync-vendored] [--host cursor|claude|both]
 # Idempotent. --check prints one line per feature and exits 1 on problems.
 # A missing merge-reviewer checkout does not fail a normal install.
 # PROJECT.md "Keep local" paths are skipped by link-project (no symlink, no conflict).
+# Agent host (cursor | claude | both): which tool's links and laptop files this checkout installs.
+#   --host writes "- **Agent host:** <value>" into .agent-tools/config.md (and into
+#   <git-dir>/agent-tools.local when that file already has the key).
+#   Effective host: --host > <git-dir>/agent-tools.local > .agent-tools/config.md > both.
+#   Team files (AGENTS.md, CLAUDE.md) are written for every host.
 
 set -eu
 
@@ -13,7 +18,7 @@ template=$(CDPATH= cd -- "$here/.." && pwd)
 . "$template/hooks/resolve-tools.sh"
 
 usage() {
-    echo "usage: install/install.sh <project> [--check|--adopt|--migrate-config|--with-reviewer|--without-reviewer|--sync-vendored]" >&2
+    echo "usage: install/install.sh <project> [--check|--adopt|--migrate-config|--with-reviewer|--without-reviewer|--sync-vendored] [--host cursor|claude|both]" >&2
     exit 2
 }
 
@@ -24,7 +29,10 @@ with_reviewer=0
 without_reviewer=0
 sync_vendored=0
 project=
-for arg in "$@"; do
+host_flag=
+while [ $# -gt 0 ]; do
+    arg=$1
+    shift
     case $arg in
         --check) mode=check ;;
         --adopt) adopt=1 ;;
@@ -32,6 +40,12 @@ for arg in "$@"; do
         --with-reviewer) with_reviewer=1 ;;
         --without-reviewer) without_reviewer=1 ;;
         --sync-vendored) sync_vendored=1 ;;
+        --host)
+            [ $# -gt 0 ] || usage
+            host_flag=$1
+            shift
+            ;;
+        --host=*) host_flag=${arg#--host=} ;;
         -h|--help) usage ;;
         *)
             if [ -n "$project" ]; then
@@ -43,6 +57,13 @@ for arg in "$@"; do
 done
 
 [ -n "$project" ] || usage
+if [ -n "$host_flag" ]; then
+    host_flag=$(printf '%s' "$host_flag" | tr '[:upper:]' '[:lower:]')
+    if ! agent_host_valid "$host_flag"; then
+        echo "install: --host must be cursor, claude, or both" >&2
+        exit 2
+    fi
+fi
 if [ "$mode" = check ] && [ "$adopt" -eq 1 ]; then
     echo "install: pass --check or --adopt, not both" >&2
     exit 2
@@ -70,6 +91,68 @@ git -C "$project" rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
     exit 1
 }
 
+set_host_key() {
+    # set_host_key <file> <value>: replace the Agent host line, or add it after Stack.
+    _sh_file=$1
+    _sh_value=$2
+    _sh_tmp=$(mktemp)
+    if grep -q '^- \*\*Agent host:\*\*' "$_sh_file"; then
+        awk -v v="$_sh_value" '
+            /^- \*\*Agent host:\*\*/ { if (!done) { print "- **Agent host:** " v; done = 1 } ; next }
+            { print }
+        ' "$_sh_file" > "$_sh_tmp"
+    elif grep -q '^- \*\*Stack:\*\*' "$_sh_file"; then
+        awk -v v="$_sh_value" '
+            { print }
+            /^- \*\*Stack:\*\*/ && !done { print "- **Agent host:** " v; done = 1 }
+        ' "$_sh_file" > "$_sh_tmp"
+    else
+        cat "$_sh_file" > "$_sh_tmp"
+        printf '%s\n' "- **Agent host:** $_sh_value" >> "$_sh_tmp"
+    fi
+    cat "$_sh_tmp" > "$_sh_file"
+    rm -f "$_sh_tmp"
+}
+
+write_host_flag() {
+    _wh_config=$project/.agent-tools/config.md
+    _wh_local=$(abs_git_path "$project" agent-tools.local)
+    case $_wh_local in
+        /*) ;;
+        *) _wh_local=$project/$_wh_local ;;
+    esac
+    if [ -f "$_wh_config" ]; then
+        set_host_key "$_wh_config" "$host_flag"
+        echo "agent host: wrote $host_flag to .agent-tools/config.md"
+    else
+        # No tool config file: PROJECT.md may still hold the switches, so do not create one here.
+        mkdir -p "$(dirname "$_wh_local")"
+        touch "$_wh_local"
+        set_host_key "$_wh_local" "$host_flag"
+        echo "agent host: no .agent-tools/config.md; wrote $host_flag to agent-tools.local"
+        return 0
+    fi
+    if [ -f "$_wh_local" ] && grep -q '^- \*\*Agent host:\*\*' "$_wh_local"; then
+        set_host_key "$_wh_local" "$host_flag"
+        echo "agent host: updated agent-tools.local"
+    fi
+}
+
+prune_empty_host_dirs() {
+    case $host in
+        claude) _pe_dir=$project/.cursor ;;
+        cursor) _pe_dir=$project/.claude ;;
+        *) return 0 ;;
+    esac
+    [ -d "$_pe_dir" ] && [ ! -L "$_pe_dir" ] || return 0
+    find "$_pe_dir" -depth -type d -empty -delete 2>/dev/null || true
+}
+
+if [ "$mode" = install ] && [ -n "$host_flag" ]; then
+    write_host_flag
+fi
+host=$(resolve_agent_host "$host_flag")
+
 problems=0
 note() {
     printf '%s\n' "$1"
@@ -90,6 +173,7 @@ need=$(switch_token "Cursor template version" || true)
 have=$(tr -d '[:space:]' < "$template/VERSION")
 note "stack: $stack"
 note "agent-layer: $layer"
+note "agent host: $host"
 if [ -n "$need" ] && version_lt "$have" "$need"; then
     if [ "$mode" = check ]; then
         fail "cursor-template: $have older than $need"
@@ -238,9 +322,9 @@ resolve_tools_load_env
 CURSOR_TEMPLATE_HOME=$template
 export CURSOR_TEMPLATE_HOME
 
-link_args=$project
+link_args="$project --host $host"
 if [ "$mode" = check ]; then
-    link_args="$project --check"
+    link_args="$project --check --host $host"
 fi
 # shellcheck disable=SC2086
 if sh "$template/install/link-project.sh" $link_args; then
@@ -336,14 +420,23 @@ if [ "$opt_out" -eq 1 ]; then
 elif resolve_merge_reviewer; then
     reviewer_script=$MERGE_REVIEWER_HOME/install/link-project.sh
     if [ -f "$reviewer_script" ]; then
+        # An older merge-reviewer rejects --host. Pass it only when that script knows the flag.
+        reviewer_host=
+        if grep -q -e '--host' "$reviewer_script"; then
+            reviewer_host="--host $host"
+        else
+            note "merge-reviewer: link-project.sh has no --host; update merge-reviewer"
+        fi
         if [ "$mode" = check ]; then
-            if sh "$reviewer_script" "$project" --check; then
+            # shellcheck disable=SC2086
+            if sh "$reviewer_script" "$project" --check $reviewer_host; then
                 reviewer_enabled=1
                 note "merge-reviewer: linked"
             else
                 fail "merge-reviewer: link check failed"
             fi
-        elif sh "$reviewer_script" "$project"; then
+        # shellcheck disable=SC2086
+        elif sh "$reviewer_script" "$project" $reviewer_host; then
             reviewer_enabled=1
             note "merge-reviewer: linked"
         else
@@ -355,7 +448,7 @@ elif resolve_merge_reviewer; then
 else
     note "merge-reviewer: not linked"
 fi
-gen_args=$project
+gen_args="$project --host $host"
 if [ "$reviewer_enabled" -eq 1 ]; then
     gen_args="$gen_args --reviewer-enabled"
 fi
@@ -374,6 +467,10 @@ elif [ "$gen_status" -eq 2 ]; then
     problems=$((problems + 1))
 else
     fail "agent-docs: problem"
+fi
+
+if [ "$mode" = install ]; then
+    prune_empty_host_dirs
 fi
 
 case "$docs" in
