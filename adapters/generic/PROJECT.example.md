@@ -34,6 +34,7 @@ npm run lint
 
 - No secrets in the diff.
 - Behaviour changes under `src/` update the matching docs in the same change when CI checks docs.
+- A dependency version change ships with the `upgrade-dependency` consumer table; a consumer that references a removed upstream API is blocking.
 
 ## Agent rules
 

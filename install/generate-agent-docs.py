@@ -305,6 +305,7 @@ def skill_rows(project: Path, reviewer_enabled: bool, base: str = ".cursor/skill
     rows = [
         ("Behaviour, config, or contract change", f"{base}/update-feature-docs/SKILL.md"),
         ("Pasted tracker issue", f"{base}/reproduce-jira/SKILL.md"),
+        ("Third-party package, theme, app, or API version change", f"{base}/upgrade-dependency/SKILL.md"),
     ]
     if (project / base / "write-phpunit").exists():
         rows.append(("Unit tests for a Magento module", f"{base}/write-phpunit/SKILL.md"))

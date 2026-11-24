@@ -55,6 +55,16 @@ Skip docs for formatting, rename-only, tests that lock existing behaviour, copy,
 
 If you add a capability that is not a row in the INDEX, add the row.
 
+## Third-party upgrades
+
+A version change of a third-party package, theme base, app, or platform API changes every place in this repository that extends or calls it, even when the diff touches only a lock file.
+
+- Trigger: a version change in a lock or manifest file (`composer.lock`, `package-lock.json`, a theme version, an app or API version), adding or removing a patch to upstream code, or a platform upgrade. Also a bug that appeared right after one.
+- Run the `upgrade-dependency` skill before you call the upgrade done: diff upstream between the old and new version, find every consumer **in the code** (grep the package's namespaces, module name, handles), and check each one against the new version. The INDEX is a second source; a consumer it does not list is still a consumer.
+- A consumer that references a removed or moved type, method, preference, event, template, snippet, block, setting, or endpoint is blocking. An upstream interface with no implementation left counts as removed.
+- A passing install, compile, or unit test run does not prove the upgrade. Test against a clean install from the lock file.
+- Put the consumer table from the skill in the change description, and update the package's INDEX row so it names every consumer.
+
 ## How to write a solution
 
 - Describe the mechanism in 2–4 sentences from **this repo's code**. Name the package and the type that owns the behaviour.

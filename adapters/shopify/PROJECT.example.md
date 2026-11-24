@@ -43,6 +43,7 @@ Do not commit merchant settings data. Do not run a theme push unless the user as
 
 - No secrets in the diff.
 - Do not commit merchant-edited settings.
+- A theme base, app, or API version change ships with the `upgrade-dependency` consumer table; a template, section, or setting that references a removed snippet, block, setting id, or app block handle is blocking.
 
 ## Agent rules
 

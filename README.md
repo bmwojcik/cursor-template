@@ -7,7 +7,7 @@ The optional post-commit reviewer is a second repo: [merge-reviewer](https://git
 ## What you get
 
 - A documentation contract: `docs/features/INDEX.md`, feature pages, append-only `docs/notes/`, architecture pages, ADRs.
-- Agent instructions: `AGENTS.md`, `CLAUDE.md`, `OPERATING_MANUAL.md`, shared Cursor rules, skills (`update-feature-docs`, `reproduce-jira`).
+- Agent instructions: `AGENTS.md`, `CLAUDE.md`, `OPERATING_MANUAL.md`, shared Cursor rules, skills (`update-feature-docs`, `reproduce-jira`, `upgrade-dependency`).
 - Stack adapters for Magento 2 and Shopify (PHPUnit skill and rule on Magento only).
 - `docs-impact` (config-driven) and an append-only notes check.
 - Hook stubs that call those tools and, when enabled, merge-reviewer.

@@ -25,6 +25,8 @@ app/design/frontend/Acme/default/
 ```bash
 ../bin/cli
 ../bin/mysql -e "SELECT 1"
+# upgrade-dependency static scan (read-only; the script ships in that skill's scripts/ directory)
+../bin/clinotty php -d memory_limit=2G -- /var/www/html --roots=Acme [--package=vendor/name] < <upgrade-dependency skill dir>/scripts/magento2-di-scan.php
 ```
 
 Suggest cache and setup commands. Do not run them unless asked. Read-only SQL. Do not switch container tools.
@@ -39,6 +41,7 @@ Suggest cache and setup commands. Do not run them unless asked. Read-only SQL. D
 - No new secrets in the diff.
 - A behaviour change under `app/code/Acme` updates that module's unit test when `Test/Unit` already exists.
 - Do not run `bin/magento`.
+- A version change in `composer.lock` ships with the `upgrade-dependency` consumer table; a consumer that references a removed upstream type or method is blocking.
 
 ## Agent rules
 
