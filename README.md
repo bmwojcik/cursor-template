@@ -7,13 +7,15 @@ The optional post-commit reviewer is a second repo: [merge-reviewer](https://git
 ## What you get
 
 - A documentation contract: `docs/features/INDEX.md`, feature pages, append-only `docs/notes/`, architecture pages, ADRs.
-- Agent instructions: `AGENTS.md`, `CLAUDE.md`, `OPERATING_MANUAL.md`, shared Cursor rules, skills (`update-feature-docs`, `reproduce-jira`).
+- Agent instructions: `AGENTS.md`, `CLAUDE.md`, `OPERATING_MANUAL.md`, shared Cursor rules, skills (`update-feature-docs`, `reproduce-jira`, `upgrade-dependency`, `dependency-map`).
 - Stack adapters for Magento 2 and Shopify (PHPUnit skill and rule on Magento only).
 - `docs-impact` (config-driven) and an append-only notes check.
+- `dependency-impact` (advisory): a lock-file change prints the consumers listed in `docs/architecture/dependency-map.md`.
 - Hook stubs that call those tools and, when enabled, merge-reviewer.
 - `install/install.sh` to link, generate, and wire a project.
+- Cursor and Claude Code support: `--host cursor|claude|both` picks which tool's links and laptop files a laptop gets (`docs/developer/agent-hosts.md`). Claude Code gets `CLAUDE.md` routing, an `implementer` subagent, and rules.
 
-Everyday coding uses Composer 2.5 Fast. Deep analysis uses Claude Opus and `OPERATING_MANUAL.md`. Cursor implementation workers use the newest Grok slug. The parent chat orchestrates.
+In Cursor, everyday coding uses Composer 2.5 Fast, deep analysis uses Claude Opus and `OPERATING_MANUAL.md`, and implementation workers use the newest Grok slug. In Claude Code, implementation goes to the `implementer` subagent on Sonnet (see `CLAUDE.md`). The parent chat orchestrates in both.
 
 ## Two files
 
@@ -26,13 +28,13 @@ Everyday coding uses Composer 2.5 Fast. Deep analysis uses Claude Opus and `OPER
 
 The reviewer is per laptop. It runs when this checkout's installer linked merge-reviewer for the project. `install/install.sh --without-reviewer` writes `- **Merge reviewer:** off` in `.git/agent-tools.local`. `--with-reviewer` removes that line.
 
-Generated `AGENTS.md` and `CLAUDE.md` are team files. They do not point at laptop-only links. `.cursor/rules/agent-tools.mdc` and `CLAUDE.local.md` hold skill and tool paths. Those two files are rewritten on each install and are never committed.
+Generated `AGENTS.md` and `CLAUDE.md` are team files. They do not point at laptop-only links. `.cursor/rules/agent-tools.mdc` (Cursor) and `CLAUDE.local.md` (Claude Code) hold skill and tool paths. They are rewritten on each install and are never committed. Which of them exists follows the **Agent host** (`cursor`, `claude`, or `both`, default `both`). Team files are written for every host.
 
 In a committed layer, `OPERATING_MANUAL.md` and `docs/ci/notes-append-only.py` are real files, so a teammate without this checkout can still read the manual and CI can run the notes check. Other tool paths stay symlinks and are never committed. See `docs/developer/agent-layer-modes.md`.
 
 ## Quick start
 
-Paste `NEW-PROJECT-PROMPT.md` into a new agent chat in the target repository. The agent asks three questions (agent layer, merge reviewer, docs impact), fills `PROJECT.md`, seeds docs from the code, and runs:
+Paste `NEW-PROJECT-PROMPT.md` into a new agent chat in the target repository. The agent asks four questions (agent layer, merge reviewer, docs impact, agent host), fills `PROJECT.md`, seeds docs from the code, and runs:
 
 ```bash
 /path/to/cursor-template/install/install.sh /path/to/project
@@ -48,13 +50,15 @@ Machine config: `~/.config/review-change/cursor.env` with `CURSOR_TEMPLATE_HOME`
 ```text
 install/install.sh              wire one project
 install/link-project.sh         absolute symlinks + exclude block
-install/links.txt               template path → project path
+install/links.txt               template path → project path ([host:...] filters)
 install/generate-agent-docs.py  AGENTS.md and CLAUDE.md
 install/agent-layer.sh          local-mode hide / list / pack / check
 hooks/                          stubs copied into <project>/.githooks/
 tools/docs-impact.py            config-driven docs check
 tools/notes-append-only.py      append-only notes check
+tools/dependency-impact.py      advisory lock-file change report
 adapters/magento2|shopify|generic/
+claude/agents/                  Claude Code subagents, linked into .claude/agents
 AGENTS.md  CLAUDE.md  OPERATING_MANUAL.md  CODING_PRINCIPLES.md
 PROJECT.example.md  NEW-PROJECT-PROMPT.md  IMPLEMENT.md
 ```

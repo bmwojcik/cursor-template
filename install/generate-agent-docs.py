@@ -2,9 +2,15 @@
 """Generate team docs and laptop-only tool rules.
 
 Team files (AGENTS.md, CLAUDE.md) come from PROJECT.md plus the generic contract.
+CLAUDE.md inlines the generated AGENTS.md without its "(Cursor only)" sections, so Claude
+Code never imports or opens AGENTS.md.
 Tool switches come from .agent-tools/config.md when that file exists.
-Laptop files (.cursor/rules/agent-tools.mdc, CLAUDE.local.md) are rewritten
-on every run.
+Laptop files are rewritten on every run: .cursor/rules/agent-tools.mdc for
+Agent host cursor or both, CLAUDE.local.md for claude or both. A generated
+laptop file of a host that is not selected is removed. Team files are always
+written because teammates may use either tool. For Stack magento2 and Agent host
+claude or both, .claude/rules/phpunit.md is generated from the Cursor rule with a
+`paths:` frontmatter, so it loads for test files only.
 """
 
 from __future__ import annotations
@@ -13,6 +19,7 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -35,6 +42,31 @@ ORCHESTRATE_ONLY_OPUS = (
     "When this chat is Claude Opus, do not search the repo or edit files. "
     "Delegate the work and answer from the workers' results."
 )
+CLAUDE_NEUTRAL_OPUS = (
+    "Whether the main chat may read and search the repository itself, or only orchestrates, "
+    "is decided by this project's Agent rules."
+)
+CLAUDE_MAY_READ_OPUS = (
+    "When the main chat is Claude Opus, it may read and search the repo for analysis and diagnosis. "
+    "Delegate multi-file implementation to subagents."
+)
+CLAUDE_ORCHESTRATE_ONLY_OPUS = (
+    "When the main chat is Claude Opus, it does not search the repo or edit files. "
+    "Delegate the work and answer from the subagents' results."
+)
+CONTRACT_MARKER = "<!-- agents-contract -->"
+CURSOR_ONLY = "(Cursor only)"
+CODING_POINTER = "Coding standards stay in `CODING_PRINCIPLES.md` and `.cursorrules`."
+CLAUDE_CODING_POINTER = (
+    "Coding standards stay in `CODING_PRINCIPLES.md`. "
+    "`.cursorrules` is Cursor's file; grep it for one heading instead of opening it."
+)
+PHPUNIT_PATHS = ("app/code/**/Test/**", "dev/tests/**")
+PHPUNIT_EVERYDAY = (
+    "Do not glob, search, or open `app/code/**/Test/**` or `dev/tests/**` unless this change must update tests "
+    "or the write-phpunit skill is active. The full PHPUnit rule loads when you open a test file."
+)
+HOSTS = ("cursor", "claude", "both")
 KEY_RE = re.compile(r"^- \*\*(.+?):\*\*\s*(.*)$")
 SECTION_RE = re.compile(r"^## (.+)$", re.M)
 FENCE_RE = re.compile(r"```(?:text)?\n(.*?)```", re.S)
@@ -118,6 +150,41 @@ def load_settings(project: Path) -> tuple[dict[str, str], dict[str, str], bool]:
     return keys, sections(guidance), legacy
 
 
+def local_override_path(project: Path) -> Path:
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(project), "rev-parse", "--path-format=absolute", "--git-path", "agent-tools.local"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        if out:
+            return Path(out)
+    except (OSError, subprocess.CalledProcessError):
+        pass
+    return project / ".git" / "agent-tools.local"
+
+
+def resolve_host(project: Path, keys: dict[str, str], flag: str = "") -> str:
+    """Flag > <git-dir>/agent-tools.local > tool config > both."""
+    value = flag.strip().lower()
+    if not value:
+        local = local_override_path(project)
+        if local.is_file():
+            value = token(project_keys(read_text(local)).get("Agent host", "")).lower()
+    if not value:
+        value = token(keys.get("Agent host", "")).lower()
+    if value not in HOSTS:
+        if value:
+            print(f"cursor-template: unknown Agent host '{value}', using both", file=sys.stderr)
+        return "both"
+    return value
+
+
+def host_has(host: str, tool: str) -> bool:
+    return host in ("both", tool)
+
+
 def code_roots(text: str) -> list[str]:
     match = re.search(r"^## Code roots\n(.*?)(?=^## |\Z)", text, re.M | re.S)
     if not match:
@@ -158,6 +225,39 @@ def generated_header(current: str) -> bool:
     return first in known
 
 
+def is_generated(path: Path) -> bool:
+    """True for a file this generator wrote. The marker may sit below a YAML frontmatter."""
+    if not path.is_file() or path.is_symlink():
+        return False
+    head = path.read_text(encoding="utf-8").splitlines()[:8]
+    return any(line.strip() == LOCAL_HEADER.strip() for line in head)
+
+
+def retire_own_symlink(path: Path, root: Path) -> bool:
+    """Remove a symlink an older install made into this checkout. True when the path is free to write."""
+    if not path.is_symlink():
+        return True
+    try:
+        Path(os.path.realpath(path)).relative_to(root.resolve())
+    except (OSError, ValueError):
+        return False
+    path.unlink()
+    return True
+
+
+def claude_contract(agents: str) -> str:
+    """AGENTS.md text for Claude Code: no section whose heading says (Cursor only), pointer reworded."""
+    parts = re.split(r"(?=^## )", agents, flags=re.M)
+    kept = []
+    for part in parts:
+        match = SECTION_RE.match(part)
+        if match and CURSOR_ONLY in match.group(1):
+            continue
+        kept.append(part.rstrip() + "\n\n")
+    text = "".join(kept).rstrip() + "\n"
+    return text.replace(CODING_POINTER, CLAUDE_CODING_POINTER)
+
+
 def render_team(root: Path, project: Path, reviewer_enabled: bool) -> tuple[str, str]:
     del reviewer_enabled
     keys, bodies, _legacy = load_settings(project)
@@ -184,34 +284,98 @@ def render_team(root: Path, project: Path, reviewer_enabled: bool) -> tuple[str,
     for title in ("Environment", "Quality bar", "Agent rules"):
         agents = append_section(agents, title, bodies.get(title, ""))
     claude = read_text(root / "CLAUDE.md").strip() + "\n"
-    for title in ("Overview", "Environment"):
-        claude = append_section(claude, title, bodies.get(title, ""))
+    if choice == "may-read":
+        claude = claude.replace(CLAUDE_NEUTRAL_OPUS, CLAUDE_MAY_READ_OPUS)
+    elif choice == "orchestrate-only":
+        claude = claude.replace(CLAUDE_NEUTRAL_OPUS, CLAUDE_ORCHESTRATE_ONLY_OPUS)
+    # Environment, Quality bar, and Agent rules ride along in the inlined contract.
+    contract = claude_contract(agents)
+    if CONTRACT_MARKER in claude:
+        claude = claude.replace(CONTRACT_MARKER, contract.strip())
+    else:
+        claude = claude.rstrip() + "\n\n" + contract
+    if token(keys.get("Stack", "")) == "magento2":
+        claude = append_section(claude, "Tests", PHPUNIT_EVERYDAY)
+    claude = append_section(claude, "Overview", bodies.get("Overview", ""))
     claude = append_section(claude, "Claude", bodies.get("Claude", ""))
     return TEAM_HEADER + "\n" + agents, TEAM_HEADER + "\n" + claude
 
 
-def skill_rows(project: Path, reviewer_enabled: bool) -> list[tuple[str, str]]:
+def skill_rows(project: Path, reviewer_enabled: bool, base: str = ".cursor/skills") -> list[tuple[str, str]]:
     rows = [
-        ("Behaviour, config, or contract change", ".cursor/skills/update-feature-docs/SKILL.md"),
-        ("Pasted tracker issue", ".cursor/skills/reproduce-jira/SKILL.md"),
+        ("Behaviour, config, or contract change", f"{base}/update-feature-docs/SKILL.md"),
+        ("Pasted tracker issue", f"{base}/reproduce-jira/SKILL.md"),
+        ("Third-party package, theme, app, or API version change", f"{base}/upgrade-dependency/SKILL.md"),
+        ("Build or refresh the third-party dependency map", f"{base}/dependency-map/SKILL.md"),
     ]
-    if (project / ".cursor/skills/write-phpunit").exists():
-        rows.append(("Unit tests for a Magento module", ".cursor/skills/write-phpunit/SKILL.md"))
+    if (project / base / "write-phpunit").exists():
+        rows.append(("Unit tests for a Magento module", f"{base}/write-phpunit/SKILL.md"))
     if reviewer_enabled:
-        for label, path in (
-            ("After a coherent diff", ".cursor/skills/review-change/SKILL.md"),
-            ("Apply a fix list", ".cursor/skills/apply-review-fixes/SKILL.md"),
-            ("Skip a fix list", ".cursor/skills/skip-review-fixes/SKILL.md"),
-        ):
+        extra = [
+            ("Apply a fix list", f"{base}/apply-review-fixes/SKILL.md"),
+            ("Skip a fix list", f"{base}/skip-review-fixes/SKILL.md"),
+        ]
+        if base == ".cursor/skills":
+            extra.insert(0, ("After a coherent diff", f"{base}/review-change/SKILL.md"))
+        for label, path in extra:
             if (project / path).parent.exists() or (project / path).exists():
                 rows.append((label, path))
     return rows
 
 
-def render_local(project: Path, reviewer_enabled: bool) -> tuple[str, str]:
-    keys, _bodies, _legacy = load_settings(project)
+def notes_text(keys: dict[str, str]) -> str:
+    mode = notes_mode(keys)
+    if mode == "ci":
+        return (
+            "The committed notes check is `python3 docs/ci/notes-append-only.py`. "
+            "The pre-commit hook runs that copy with `--staged` when it is present."
+        )
+    if mode == "local":
+        return (
+            "After appending to `docs/notes/`, run `python3 docs/scripts/notes-append-only.py` until it prints `ok`. "
+            "The pre-commit hook runs it with `--staged` and blocks the commit when an old entry changed."
+        )
+    return "Notes check is off on this laptop."
+
+
+def docs_impact_text(keys: dict[str, str]) -> str:
     docs = token(keys.get("Docs impact", "off")) or "off"
     layer = token(keys.get("Agent layer", "committed")) or "committed"
+    if docs == "local" or (docs == "ci" and layer == "local"):
+        return (
+            "Hidden docs are not staged. The pre-commit check is advisory: it prints findings and does not block. "
+            "Ignored files under `docs/` edited since HEAD count as the docs update."
+        )
+    if docs == "ci":
+        return "This repository commits docs. The pre-commit check runs `python3 docs/ci/docs-impact.py --staged` and blocks when mapped code has no docs update."
+    return "Docs impact is off on this laptop. Do not run a docs-impact command."
+
+
+def dependency_text(keys: dict[str, str], base: str) -> str:
+    """Laptop-only commands for the Third-party upgrades contract."""
+    lines = [
+        "Advisory, never blocks. When a task or diff touches a lock or manifest file, a theme or app version, "
+        "or a patch to upstream code, run it at the start and before you finish, and name the expected changes in your reply:",
+        "",
+        "```bash",
+        "python3 docs/scripts/dependency-impact.py                  # HEAD vs working tree",
+        "python3 docs/scripts/dependency-impact.py --base <base>    # whole branch",
+        "python3 docs/scripts/dependency-impact.py --check-map      # map entries out of date with the lock",
+        "```",
+        "",
+        "The pre-commit hook prints the same report for staged lock files and never fails the commit.",
+    ]
+    if token(keys.get("Stack", "")) == "magento2":
+        lines += [
+            "",
+            f"Magento scripts: `{base}/dependency-map/scripts/magento2-dependency-map.php` (map) and "
+            f"`{base}/upgrade-dependency/scripts/magento2-di-scan.php` (DI scan). Pipe them through stdin into the PHP container; "
+            "the full commands are in `PROJECT.md` § Environment.",
+        ]
+    return "\n".join(lines)
+
+
+def render_cursor_local(project: Path, reviewer_enabled: bool, keys: dict[str, str]) -> str:
     lines = [
         "---",
         "description: Laptop-only tool rules. Teammates without these tools do not have this file.",
@@ -229,31 +393,8 @@ def render_local(project: Path, reviewer_enabled: bool) -> tuple[str, str]:
     ]
     for label, path in skill_rows(project, reviewer_enabled):
         lines.append(f"| {label} | `{path}` |")
-    lines.extend(["", "## Notes", ""])
-    if notes_mode(keys) == "ci":
-        lines.append(
-            "The committed notes check is `python3 docs/ci/notes-append-only.py`. "
-            "The pre-commit hook runs that copy with `--staged` when it is present."
-        )
-    elif notes_mode(keys) == "local":
-        lines.append(
-            "After appending to `docs/notes/`, run `python3 docs/scripts/notes-append-only.py` until it prints `ok`. "
-            "The pre-commit hook runs it with `--staged` and blocks the commit when an old entry changed."
-        )
-    else:
-        lines.append("Notes check is off on this laptop.")
-    lines.extend(["", "## Docs impact", ""])
-    if docs == "local" or (docs == "ci" and layer == "local"):
-        lines.append(
-            "Hidden docs are not staged. The pre-commit check is advisory: it prints findings and does not block. "
-            "Ignored files under `docs/` edited since HEAD count as the docs update."
-        )
-    elif docs == "ci":
-        lines.append(
-            "This repository commits docs. The pre-commit check runs `python3 docs/ci/docs-impact.py --staged` and blocks when mapped code has no docs update."
-        )
-    else:
-        lines.append("Docs impact is off on this laptop. Do not run a docs-impact command.")
+    lines.extend(["", "## Notes", "", notes_text(keys), "", "## Docs impact", "", docs_impact_text(keys)])
+    lines.extend(["", "## Dependency impact", "", dependency_text(keys, ".cursor/skills")])
     if reviewer_enabled:
         model = keys.get("Review model", "").strip() or "the configured model"
         lines.extend(
@@ -265,22 +406,71 @@ def render_local(project: Path, reviewer_enabled: bool) -> tuple[str, str]:
                 "Do not judge your own diff in the chat that wrote the code.",
                 f"The model is {model}.",
                 "Skip a run with `REVIEW_CHANGE=0`, `REVIEW_CHANGE_SKIP=1`, or `[skip review]` in the commit subject.",
-                "Claude Code cannot draw the result. Point the human at `docs/developer/review-change.md`.",
                 "A configured pre-review command may run first. Its failure does not fail the commit.",
             ]
         )
-    body = "\n".join(lines).rstrip() + "\n"
-    claude = (
-        LOCAL_HEADER
-        + "\n# CLAUDE.local.md\n\n"
-        + "Laptop-only. Follow `.cursor/rules/agent-tools.mdc` for skills, notes, and docs checks.\n"
-    )
+    return LOCAL_HEADER + "\n" + "\n".join(lines).rstrip() + "\n"
+
+
+def render_claude_local(project: Path, reviewer_enabled: bool, keys: dict[str, str]) -> str:
+    # Skills are listed to Claude by their own descriptions, so no skills table here.
+    lines = [
+        LOCAL_HEADER.rstrip("\n"),
+        "",
+        "# CLAUDE.local.md",
+        "",
+        "Laptop-only, rewritten on every install.",
+        "",
+        "## Notes",
+        "",
+        notes_text(keys),
+        "",
+        "## Docs impact",
+        "",
+        docs_impact_text(keys),
+        "",
+        "## Dependency impact",
+        "",
+        dependency_text(keys, ".claude/skills"),
+    ]
     if reviewer_enabled:
-        claude += (
-            "\nDo not judge your own diff here. Claude Code cannot draw the background result. "
-            "Point the human at `docs/developer/review-change.md`.\n"
+        lines.extend(
+            [
+                "",
+                "## Review",
+                "",
+                "A later commit starts merge-reviewer in the background; it does not block git. "
+                "The report is `var/review-change.html` and `.md`; read it only when the user asks about the review.",
+                "Do not review your own diff in this chat or start a review from it. "
+                "Apply or skip the fix list with the `apply-review-fixes` or `skip-review-fixes` skill.",
+                "Skip a run with `REVIEW_CHANGE=0`, `REVIEW_CHANGE_SKIP=1`, or `[skip review]` in the commit subject. "
+                "Setup: `docs/developer/review-change.md`.",
+            ]
         )
-    return LOCAL_HEADER + "\n" + body, claude
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def render_claude_phpunit(root: Path) -> str:
+    """.claude/rules/phpunit.md from the Cursor rule: paths-scoped, no everyday-work section."""
+    text = read_text(root / "adapters" / "magento2" / "rules" / "phpunit.mdc")
+    if text.startswith("---"):
+        end = text.find("\n---", 3)
+        if end != -1:
+            text = text[end + 4 :]
+    text = text.replace(".cursor/skills/", ".claude/skills/")
+    kept = []
+    for part in re.split(r"(?=^## )", text.strip(), flags=re.M):
+        match = SECTION_RE.match(part)
+        if match and match.group(1).strip() == "Everyday work":
+            continue
+        kept.append(part.rstrip() + "\n\n")
+    front = "---\npaths:\n" + "".join(f'  - "{item}"\n' for item in PHPUNIT_PATHS) + "---\n"
+    return front + LOCAL_HEADER + "\n" + "".join(kept).rstrip() + "\n"
+
+
+def render_local(project: Path, reviewer_enabled: bool) -> tuple[str, str]:
+    keys, _bodies, _legacy = load_settings(project)
+    return render_cursor_local(project, reviewer_enabled, keys), render_claude_local(project, reviewer_enabled, keys)
 
 
 def classify(path: Path, expected: str, header: str) -> str:
@@ -323,11 +513,16 @@ def kept_paths(keys: dict[str, str]) -> set[str]:
 
 
 def filter_matches(filt: str, stack: str, docs: str) -> bool:
+    """Comma-joined parts must all match. Host parts match every host: team files must not name any link."""
     if not filt:
         return True
-    if filt == stack:
-        return True
-    return filt == "docs-impact:local" and docs == "local"
+    for part in filt.split(","):
+        if part in ("host:cursor", "host:claude") or part == stack:
+            continue
+        if part == "docs-impact:local" and docs == "local":
+            continue
+        return False
+    return True
 
 
 def link_only_paths(root: Path, keys: dict[str, str]) -> list[str]:
@@ -545,6 +740,7 @@ def main() -> int:
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--reviewer-enabled", action="store_true")
+    parser.add_argument("--host", choices=HOSTS)
     parser.add_argument("--seed-config", choices=("ci", "local"))
     parser.add_argument("--migrate-config", action="store_true")
     args = parser.parse_args()
@@ -559,7 +755,8 @@ def main() -> int:
     if args.seed_config:
         return seed_config(root, project, args.seed_config)
 
-    _keys, _bodies, legacy = load_settings(project)
+    keys, _bodies, legacy = load_settings(project)
+    host = resolve_host(project, keys, args.host or "")
     if legacy:
         print("cursor-template: switches still in PROJECT.md — run install.sh --migrate-config", file=sys.stderr)
 
@@ -569,10 +766,21 @@ def main() -> int:
         project / "AGENTS.md": agents_text,
         project / "CLAUDE.md": claude_text,
     }
-    local = {
-        project / ".cursor/rules/agent-tools.mdc": local_rule,
-        project / "CLAUDE.local.md": local_claude,
-    }
+    local = {}
+    stale_local = []
+    for tool, path, text in (
+        ("cursor", project / ".cursor/rules/agent-tools.mdc", local_rule),
+        ("claude", project / "CLAUDE.local.md", local_claude),
+    ):
+        if host_has(host, tool):
+            local[path] = text
+        else:
+            stale_local.append(path)
+    phpunit_path = project / ".claude/rules/phpunit.md"
+    if host_has(host, "claude") and token(keys.get("Stack", "")) == "magento2":
+        local[phpunit_path] = render_claude_phpunit(root)
+    else:
+        stale_local.append(phpunit_path)
     failed = False
     hand_edited = False
     for path, expected in team.items():
@@ -593,6 +801,16 @@ def main() -> int:
             continue
         print(f"{path.name}: {state}")
     for path, expected in local.items():
+        if path == phpunit_path and (path.is_symlink() or (path.exists() and not is_generated(path))):
+            owned_link = path.is_symlink() and Path(os.path.realpath(path)).is_relative_to(root.resolve())
+            if not owned_link:
+                print(f"{path.name}: kept (project file, not generated)")
+                continue
+            if args.check:
+                print(f"{path.name}: stale (old symlink)")
+                failed = True
+                continue
+            retire_own_symlink(path, root)
         if args.check:
             state = "missing" if not path.is_file() else ("fresh" if path.read_text(encoding="utf-8") == expected else "stale")
             print(f"{path.name}: {state}")
@@ -605,6 +823,18 @@ def main() -> int:
             continue
         path.write_text(expected, encoding="utf-8")
         print(f"{path.name}: wrote")
+    for path in stale_local:
+        generated = is_generated(path) if path == phpunit_path else (
+            path.is_file() and generated_header(path.read_text(encoding="utf-8"))
+        )
+        if not generated:
+            continue
+        if args.check:
+            print(f"{path.name}: stale (agent host {host})")
+            failed = True
+            continue
+        path.unlink()
+        print(f"{path.name}: removed (agent host {host})")
     if args.check:
         scan_team_refs(root, project)
     if hand_edited:

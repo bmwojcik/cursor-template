@@ -51,6 +51,38 @@ switch_field() {
     project_field "$1" "$_sf_file"
 }
 
+# Effective agent host: cursor | claude | both.
+# Order: first argument (a flag value) > <git-dir>/agent-tools.local > tool config > both.
+# Caller sets $repo to the project root. A bad value in a file falls back to both.
+agent_host_valid() {
+    case $1 in
+        cursor|claude|both) return 0 ;;
+    esac
+    return 1
+}
+
+resolve_agent_host() {
+    _ah_value=${1:-}
+    if [ -z "$_ah_value" ] && [ -n "${repo:-}" ]; then
+        _ah_local=$(git -C "$repo" rev-parse --path-format=absolute --git-path agent-tools.local 2>/dev/null || true)
+        if [ -n "$_ah_local" ] && [ -f "$_ah_local" ]; then
+            _ah_value=$(project_token "Agent host" "$_ah_local" || true)
+        fi
+    fi
+    if [ -z "$_ah_value" ]; then
+        _ah_value=$(switch_token "Agent host" 2>/dev/null || true)
+    fi
+    _ah_value=$(printf '%s' "$_ah_value" | tr '[:upper:]' '[:lower:]')
+    if [ -z "$_ah_value" ]; then
+        _ah_value=both
+    elif ! agent_host_valid "$_ah_value"; then
+        echo "cursor-template: unknown Agent host '$_ah_value', using both" >&2
+        _ah_value=both
+    fi
+    printf '%s\n' "$_ah_value"
+    unset _ah_value _ah_local
+}
+
 abs_git_path() {
     git -C "$1" rev-parse --path-format=absolute --git-path "$2"
 }

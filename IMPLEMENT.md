@@ -11,6 +11,7 @@ Ask the human, and wait, before writing files:
 1. **Agent layer:** `committed` or `local`? This value goes in `.agent-tools/config.md`.
 2. **Reviewer on this laptop:** yes or no? Yes links merge-reviewer. No runs `install/install.sh --without-reviewer`. It is not a git setting.
 3. **Docs impact:** `ci`, `local`, or `off`? This value goes in `.agent-tools/config.md`.
+4. **Agent host:** `cursor`, `claude`, or `both`? Default is the tool you are running in: Claude Code means `claude`, Cursor means `cursor`. The human may answer `both`. Pass it as `install/install.sh <project> --host <value>`; that writes `- **Agent host:**` in `.agent-tools/config.md`. See `docs/developer/agent-hosts.md`.
 
 `PROJECT.md` is team guidance only: Overview, Stack prose, Code roots, Package naming, Environment (the only command list), Docs language, Quality bar, Agent rules, and optional Claude notes. No switches, versions, or tool paths.
 
@@ -18,7 +19,7 @@ Then detect **Stack**: `magento2` (`app/code` and `magento/product-*` in `compos
 
 ## 1. PROJECT.md
 
-Copy `PROJECT.example.md` to `PROJECT.md` and `.agent-tools/config.example.md` to `.agent-tools/config.md`. Put the three answers in `config.md`. Fill code roots, the Environment commands, git host, git project, and base branch. Leave unknown reproduce-ticket lines as `none`.
+Copy `PROJECT.example.md` to `PROJECT.md` and `.agent-tools/config.example.md` to `.agent-tools/config.md`. Put the answers in `config.md`. Fill code roots, the Environment commands, git host, git project, and base branch. Leave unknown reproduce-ticket lines as `none`.
 
 An existing repository that still has switches in `PROJECT.md` can run `install/install.sh <project> --migrate-config`. That moves the tool keys and `## Reproduce ticket` into `.agent-tools/config.md`, renames `## Review rules` to `## Quality bar` when Quality bar is missing, and writes `.git/agent-tools.local` only when Merge reviewer was `off`.
 
@@ -31,11 +32,13 @@ When the stack adapter has `CODING_PRINCIPLES.md` or `cursorrules.md`, append th
 From the template checkout:
 
 ```bash
-install/install.sh <project>
+install/install.sh <project> --host <cursor|claude|both>
 install/install.sh <project> --check
 ```
 
 That links files in `install/links.txt`, sets `git config core.hooksPath .githooks && chmod +x .githooks/* 2>/dev/null || true`, copies hook stubs as mode 755, generates `AGENTS.md` and `CLAUDE.md`, and:
+
+- **Agent host** `cursor` links only `.cursor/...` and writes `.cursor/rules/agent-tools.mdc`. `claude` links `.claude/skills`, `.claude/agents/implementer.md`, `.claude/rules/coding.md`, generates `.claude/rules/phpunit.md` (Magento 2), and writes `CLAUDE.local.md`. `both` (the default when the key is missing) does all of it. `AGENTS.md` and `CLAUDE.md` are written for every host; `CLAUDE.md` inlines `AGENTS.md` without its Cursor-only sections. With both hosts, `.cursorindexingignore` gets a managed block for the Claude files (never edited when git tracks it). Switching hosts removes the links and the generated laptop file of the host that was dropped.
 
 - **Agent layer** `committed`: `[vendor:committed]` paths (today `OPERATING_MANUAL.md`) are real files. The sha256 is stored in `.agent-tools/vendored.lock`, which is committed with the layer. The exclude block does not list those paths. A copy that still matches the lock is updated when the template file changes. A hand-edited copy is left alone: `--check` prints `vendored-modified` and exits 1. `install.sh --sync-vendored` backs it up under `.git/cursor-template-backup/` and overwrites it.
 - **Agent layer** `local`: those same paths stay symlinks and are excluded.
@@ -83,7 +86,7 @@ When the switch is `off`, stop. When it is `on`, tell the human to clone [merge-
 
 ## Checks
 
-- [ ] The three switches match the human's answers
+- [ ] The switches and the agent host match the human's answers; `--check` prints `agent host: <value>`
 - [ ] `install/install.sh <project> --check` exits 0, or the only failure is a reviewer checkout the human has not cloned yet. `team-ref-to-local` lines are fixed. `vendored-modified` is not left failing.
 - [ ] INDEX rows cite paths that exist in this repo
 - [ ] `docs-impact` config prefixes match `PROJECT.md` when the switch is not `off`

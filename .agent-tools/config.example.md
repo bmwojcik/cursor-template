@@ -5,6 +5,8 @@ Machine settings for a laptop that has the tools linked. Teammates are not asked
 <!-- Comments belong on their own line. Do not put them after a value. -->
 
 - **Stack:** generic
+- **Agent host:** both
+<!-- cursor, claude, or both. Which tool's links and laptop files this laptop gets. Missing means both. A line in <git-dir>/agent-tools.local overrides this. docs/developer/agent-hosts.md -->
 - **Opus parent:**
 <!-- orchestrate-only or may-read. Empty keeps the neutral delegation sentence. -->
 - **Agent layer:** committed

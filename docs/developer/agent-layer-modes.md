@@ -26,7 +26,7 @@ The cursor-template exclude block does not list vendored paths. `OPERATING_MANUA
 
 The same files exist on disk and stay out of `git status`, including `/.agent-tools/`. `install/agent-layer.sh install` writes `# >>> agent-layer` into `.git/info/exclude`.
 
-`.cursor/rules/agent-tools.mdc` and `CLAUDE.local.md` are laptop files in every mode. The cursor-template exclude block hides them even when the rest of the agent layer is committed.
+`.cursor/rules/agent-tools.mdc` and `CLAUDE.local.md` are laptop files in every mode (each exists only for an Agent host that includes its tool, see `agent-hosts.md`). The cursor-template exclude block hides them even when the rest of the agent layer is committed.
 
 Patterns hide untracked files only. A file that is already tracked still shows when you edit it.
 
