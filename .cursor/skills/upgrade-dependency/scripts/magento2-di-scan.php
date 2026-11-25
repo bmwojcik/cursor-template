@@ -30,11 +30,11 @@ foreach ($args as $a) {
     }
 }
 if (!$root || !is_file("$root/vendor/composer/ClassLoader.php")) {
-    fwrite(STDERR, "usage: php -- <magento-root> [--roots=A,B] [--package=vendor/name] < magento2-di-scan.php\n");
+    fwrite(fopen("php://stderr", "w"), "usage: php -- <magento-root> [--roots=A,B] [--package=vendor/name] < magento2-di-scan.php\n");
     exit(2);
 }
 if (!function_exists('simplexml_load_file')) {
-    fwrite(STDERR, "ext-simplexml missing: run this inside the PHP container\n");
+    fwrite(fopen("php://stderr", "w"), "ext-simplexml missing: run this inside the PHP container\n");
     exit(2);
 }
 
@@ -57,7 +57,7 @@ $pkgNamespaces = [];
 if ($opts['package'] !== '') {
     $pj = "$root/vendor/{$opts['package']}/composer.json";
     if (!is_file($pj)) {
-        fwrite(STDERR, "package {$opts['package']} not found under vendor/\n");
+        fwrite(fopen("php://stderr", "w"), "package {$opts['package']} not found under vendor/\n");
         exit(2);
     }
     $autoload = json_decode(file_get_contents($pj), true)['autoload'] ?? [];
@@ -251,7 +251,7 @@ foreach ($roots as $vendorDir) {
 ksort($findings);
 foreach (array_keys($findings) as $line) echo $line, "\n";
 $blocking = count(array_filter($findings, fn ($k) => $k !== 'PLUGIN_METHOD_ON_IFACE'));
-fwrite(STDERR, sprintf(
+fwrite(fopen("php://stderr", "w"), sprintf(
     "magento2-di-scan: roots=%s package=%s findings=%d blocking=%d disabled-modules-skipped=%d\n",
     implode(',', $roots),
     $opts['package'] ?: '-',

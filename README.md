@@ -7,9 +7,10 @@ The optional post-commit reviewer is a second repo: [merge-reviewer](https://git
 ## What you get
 
 - A documentation contract: `docs/features/INDEX.md`, feature pages, append-only `docs/notes/`, architecture pages, ADRs.
-- Agent instructions: `AGENTS.md`, `CLAUDE.md`, `OPERATING_MANUAL.md`, shared Cursor rules, skills (`update-feature-docs`, `reproduce-jira`, `upgrade-dependency`).
+- Agent instructions: `AGENTS.md`, `CLAUDE.md`, `OPERATING_MANUAL.md`, shared Cursor rules, skills (`update-feature-docs`, `reproduce-jira`, `upgrade-dependency`, `dependency-map`).
 - Stack adapters for Magento 2 and Shopify (PHPUnit skill and rule on Magento only).
 - `docs-impact` (config-driven) and an append-only notes check.
+- `dependency-impact` (advisory): a lock-file change prints the consumers listed in `docs/architecture/dependency-map.md`.
 - Hook stubs that call those tools and, when enabled, merge-reviewer.
 - `install/install.sh` to link, generate, and wire a project.
 - Cursor and Claude Code support: `--host cursor|claude|both` picks which tool's links and laptop files a laptop gets (`docs/developer/agent-hosts.md`). Claude Code gets `CLAUDE.md` routing, an `implementer` subagent, and rules.
@@ -55,6 +56,7 @@ install/agent-layer.sh          local-mode hide / list / pack / check
 hooks/                          stubs copied into <project>/.githooks/
 tools/docs-impact.py            config-driven docs check
 tools/notes-append-only.py      append-only notes check
+tools/dependency-impact.py      advisory lock-file change report
 adapters/magento2|shopify|generic/
 claude/agents/                  Claude Code subagents, linked into .claude/agents
 AGENTS.md  CLAUDE.md  OPERATING_MANUAL.md  CODING_PRINCIPLES.md

@@ -9,6 +9,7 @@
 .cursor/skills/update-feature-docs .cursor/skills/update-feature-docs
 .cursor/skills/reproduce-jira .cursor/skills/reproduce-jira
 .cursor/skills/upgrade-dependency .cursor/skills/upgrade-dependency
+.cursor/skills/dependency-map .cursor/skills/dependency-map
 [magento2] adapters/magento2/skills/write-phpunit .cursor/skills/write-phpunit
 
 .cursor/rules/coding.mdc .cursor/rules/coding.mdc
@@ -33,4 +34,5 @@ docs/developer/agent-layer-modes.md docs/developer/agent-layer-modes.md
 docs/developer/agent-hosts.md docs/developer/agent-hosts.md
 
 tools/notes-append-only.py docs/scripts/notes-append-only.py
+tools/dependency-impact.py docs/scripts/dependency-impact.py
 [docs-impact:local] tools/docs-impact.py docs/scripts/docs-impact.py

@@ -306,6 +306,7 @@ def skill_rows(project: Path, reviewer_enabled: bool, base: str = ".cursor/skill
         ("Behaviour, config, or contract change", f"{base}/update-feature-docs/SKILL.md"),
         ("Pasted tracker issue", f"{base}/reproduce-jira/SKILL.md"),
         ("Third-party package, theme, app, or API version change", f"{base}/upgrade-dependency/SKILL.md"),
+        ("Build or refresh the third-party dependency map", f"{base}/dependency-map/SKILL.md"),
     ]
     if (project / base / "write-phpunit").exists():
         rows.append(("Unit tests for a Magento module", f"{base}/write-phpunit/SKILL.md"))
@@ -350,6 +351,30 @@ def docs_impact_text(keys: dict[str, str]) -> str:
     return "Docs impact is off on this laptop. Do not run a docs-impact command."
 
 
+def dependency_text(keys: dict[str, str], base: str) -> str:
+    """Laptop-only commands for the Third-party upgrades contract."""
+    lines = [
+        "Advisory, never blocks. When a task or diff touches a lock or manifest file, a theme or app version, "
+        "or a patch to upstream code, run it at the start and before you finish, and name the expected changes in your reply:",
+        "",
+        "```bash",
+        "python3 docs/scripts/dependency-impact.py                  # HEAD vs working tree",
+        "python3 docs/scripts/dependency-impact.py --base <base>    # whole branch",
+        "python3 docs/scripts/dependency-impact.py --check-map      # map entries out of date with the lock",
+        "```",
+        "",
+        "The pre-commit hook prints the same report for staged lock files and never fails the commit.",
+    ]
+    if token(keys.get("Stack", "")) == "magento2":
+        lines += [
+            "",
+            f"Magento scripts: `{base}/dependency-map/scripts/magento2-dependency-map.php` (map) and "
+            f"`{base}/upgrade-dependency/scripts/magento2-di-scan.php` (DI scan). Pipe them through stdin into the PHP container; "
+            "the full commands are in `PROJECT.md` § Environment.",
+        ]
+    return "\n".join(lines)
+
+
 def render_cursor_local(project: Path, reviewer_enabled: bool, keys: dict[str, str]) -> str:
     lines = [
         "---",
@@ -369,6 +394,7 @@ def render_cursor_local(project: Path, reviewer_enabled: bool, keys: dict[str, s
     for label, path in skill_rows(project, reviewer_enabled):
         lines.append(f"| {label} | `{path}` |")
     lines.extend(["", "## Notes", "", notes_text(keys), "", "## Docs impact", "", docs_impact_text(keys)])
+    lines.extend(["", "## Dependency impact", "", dependency_text(keys, ".cursor/skills")])
     if reviewer_enabled:
         model = keys.get("Review model", "").strip() or "the configured model"
         lines.extend(
@@ -402,6 +428,10 @@ def render_claude_local(project: Path, reviewer_enabled: bool, keys: dict[str, s
         "## Docs impact",
         "",
         docs_impact_text(keys),
+        "",
+        "## Dependency impact",
+        "",
+        dependency_text(keys, ".claude/skills"),
     ]
     if reviewer_enabled:
         lines.extend(

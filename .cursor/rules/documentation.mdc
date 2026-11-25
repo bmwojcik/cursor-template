@@ -26,6 +26,10 @@ Describe the mechanism from this repo's code (2–4 sentences). Grep before citi
 
 Use `.cursor/skills/update-feature-docs/SKILL.md`.
 
+## Third-party upgrades
+
+When a task or diff touches a lock or manifest file, a theme or app version, or a patch to upstream code, follow `AGENTS.md` § Third-party upgrades: run `dependency-impact.py` (path in `.cursor/rules/agent-tools.mdc`), name the expected changes in your reply, and use `.cursor/skills/upgrade-dependency/SKILL.md` for a high or medium risk package. Keep `docs/architecture/dependency-map.md` current with `.cursor/skills/dependency-map/SKILL.md`.
+
 When `PROJECT.md` **Docs impact** is `off`, do not run docs-impact. When it is `ci` or `local`, the skill names the command.
 
 ## Notes (append-only)

@@ -1,6 +1,6 @@
 #!/bin/sh
 # cursor-template hook
-# Docs impact, then the notes append-only check.
+# Docs impact, then the notes append-only check, then the advisory dependency-impact report.
 # A missing tool checkout logs one line and does not fail the commit.
 # A real docs-impact or notes violation still fails the commit.
 # Safe when .githooks/is-local-dev.sh is absent.
@@ -126,6 +126,19 @@ if [ "$notes_mode" != "off" ]; then
         python3 "$notes" --staged || exit 1
     else
         echo "notes-append-only: template checkout missing; skipped" >&2
+    fi
+fi
+
+# Advisory only: a staged lock-file change prints the consumers that are expected to need a look.
+if git diff --cached --name-only -- composer.lock package-lock.json config/settings_schema.json 2>/dev/null | grep -q .; then
+    impact=
+    if [ -f "$repo/docs/scripts/dependency-impact.py" ]; then
+        impact=$repo/docs/scripts/dependency-impact.py
+    elif [ -n "${CURSOR_TEMPLATE_HOME:-}" ] && [ -f "$CURSOR_TEMPLATE_HOME/tools/dependency-impact.py" ]; then
+        impact=$CURSOR_TEMPLATE_HOME/tools/dependency-impact.py
+    fi
+    if [ -n "$impact" ]; then
+        python3 "$impact" --staged --check-map || true
     fi
 fi
 

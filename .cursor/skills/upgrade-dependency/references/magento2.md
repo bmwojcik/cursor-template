@@ -2,6 +2,14 @@
 
 For `upgrade-dependency` step 2 and step 4. Custom code is the code roots in `PROJECT.md` (usually `app/code/<Vendor>/` and `app/design/`).
 
+## Start from the map
+
+`docs/architecture/dependency-map.md` (the `dependency-map` skill) lists each package's consumers by kind, the wrappers that require it, and Health findings (dead theme overrides, patches for packages that are not installed). `dependency-impact.py` prints the map entry of every package whose version changed. Treat the map as the starting list and confirm it with the scan and a grep.
+
+## Where to read vendor code
+
+In docker-magento and similar setups, `vendor/` may be bind-mounted (same as local) or live only in the container. Read upstream files through the container (`<container cli> cat vendor/<package>/<file>`, or pipe a script through stdin). Read our own `app/`, `patches/`, and `docs/` from the checkout: a container can hold an old copy of directories that are not mounted (for example `patches/`).
+
 ## Static scan
 
 `scripts/magento2-di-scan.php` in this skill reads files only (Composer maps, `di.xml`, `events.xml`, constructors). It needs the PHP container because of `ext-simplexml`, and it is piped through stdin, so the skill directory does not have to be mounted. The container command is in `PROJECT.md` § Environment.
@@ -10,7 +18,7 @@ For `upgrade-dependency` step 2 and step 4. Custom code is the code roots in `PR
 <container php> -d memory_limit=2G -- <magento-root-in-container> --roots=<Vendor1>,<Vendor2> [--package=<vendor/name>] < <skill-dir>/scripts/magento2-di-scan.php
 ```
 
-Run it on the base branch and after the bump, then compare. `--package` keeps only references into that package's namespaces. Exit code 1 means a blocking finding.
+Run it in the container first (its `vendor/` is what runs) and in the local checkout only as a fallback. It also reads `app/code` there, so the container must mount `app/`. Run it on the base branch and after the bump, then compare. `--package` keeps only references into that package's namespaces. Exit code 1 means a blocking finding.
 
 | Finding | Meaning |
 | --- | --- |

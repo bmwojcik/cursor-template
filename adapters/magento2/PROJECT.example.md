@@ -25,8 +25,12 @@ app/design/frontend/Acme/default/
 ```bash
 ../bin/cli
 ../bin/mysql -e "SELECT 1"
-# upgrade-dependency static scan (read-only; the script ships in that skill's scripts/ directory)
+# Third-party upgrades (read-only; scripts ship in the skills' scripts/ directories, paths in the local tool rules)
+# DI scan, in the container:
 ../bin/clinotty php -d memory_limit=2G -- /var/www/html --roots=Acme [--package=vendor/name] < <upgrade-dependency skill dir>/scripts/magento2-di-scan.php
+# Dependency map: vendor index from the container, then the map from the checkout:
+../bin/clinotty php -d memory_limit=2G -- /var/www/html --emit-vendor-index < <dependency-map skill dir>/scripts/magento2-dependency-map.php > var/dependency-map.vendor.json
+php -d memory_limit=2G -- . --vendor-index=var/dependency-map.vendor.json --source=container --roots=Acme --lang=en < <dependency-map skill dir>/scripts/magento2-dependency-map.php > docs/architecture/dependency-map.md
 ```
 
 Suggest cache and setup commands. Do not run them unless asked. Read-only SQL. Do not switch container tools.
